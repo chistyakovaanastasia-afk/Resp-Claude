@@ -411,10 +411,11 @@ class Selector {
     }
     if (!pool.length) pool = Array.from({ length: this.size }, (_, i) => i).filter((i) => i !== lastIndex);
 
-    // Drittel bevorzugen, das zuletzt am wenigsten drankam.
+    // Drittel bevorzugen, das zuletzt am wenigsten drankam (also den
+    // HOECHSTEN "Fragen seit letztem Mal"-Wert hat - absteigend sortieren).
     const byTertile = [[], [], []];
     for (const i of pool) byTertile[this.tertileOf(i)].push(i);
-    const order = [0, 1, 2].sort((a, b) => this.tertileRecent[a] - this.tertileRecent[b]);
+    const order = [0, 1, 2].sort((a, b) => this.tertileRecent[b] - this.tertileRecent[a]);
     let chosenTertile = order.find((t) => byTertile[t].length > 0);
     if (chosenTertile === undefined) chosenTertile = order[0];
     const candidates = byTertile[chosenTertile].length ? byTertile[chosenTertile] : pool;
