@@ -1,13 +1,5 @@
 "use strict";
 
-import {
-  loadModel as loadWhisperModel,
-  recordUntilSilence,
-  transcribe as whisperTranscribe,
-  sttSupported,
-  releaseMic
-} from "./whisper-stt.js";
-
 /* ---------------------------------------------------------------------
  * Konfiguration & Speicher
  * ------------------------------------------------------------------- */
@@ -490,126 +482,112 @@ function speak(text, lang) {
   });
 }
 
+const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
+
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Statt der eingebauten (sprachfesten, je nach Browser unzuverlaessigen)
-// Browser-Spracherkennung nutzt die App ein lokales, mehrsprachiges
-// Modell (Whisper, siehe whisper-stt.js): eigene Audioaufnahme mit
-// Lautstaerke-basierter Sprachpausen-Erkennung, danach Transkription.
-// Das Modell erkennt die gesprochene Sprache selbst - kein Umschalten
-// zwischen "erwartet Deutsch"/"erwartet Chinesisch" noetig. Dafuer
-// dauert eine Antwort spuerbar laenger (Verarbeitungszeit nach dem
-// Sprechen), und beim allerersten Start muss das Modell einmalig
-// heruntergeladen werden.
+// Manche Browser (v.a. Safari auf iPhone/iPad) melden die
+// SpeechRecognition-Klasse als vorhanden, liefern aber nie ein
+// Ergebnis - sie beenden sofort mit Fehler oder "end", ohne je
+// zuzuhoeren. Das sieht fuer die Nutzerin genau wie ein normales
+// "nichts verstanden" aus, ist aber ein Kompatibilitaetsproblem, kein
+// Hoerfehler. Wir erkennen das an wiederholten sofortigen Abbruechen
+// und schlagen dann Alarm statt endlos weiterzulaufen.
+let recognitionHardFailStreak = 0;
+const RECOGNITION_HARD_ERRORS = new Set(["not-allowed", "service-not-allowed", "audio-capture"]);
 
-let modelReady = false;
+// Bleibt ueber kurze Sprechpausen hinweg aktiv (continuous) und nimmt
+// auch ein noch nicht "finales" Zwischenergebnis, falls die Erkennung
+// endet/timeoutet, bevor ein finales Ergebnis kam - sonst geht eine
+// kurze oder leicht verzoegerte Antwort komplett verloren.
+function listenOnce(lang, timeoutMs = 9000, onPartial) {
+  return new Promise((resolve) => {
+    if (!SpeechRecognitionImpl) return resolve("");
+    const rec = new SpeechRecognitionImpl();
+    rec.lang = lang;
+    // "continuous" klingt hilfreich, sorgt aber dafuer, dass der
+    // Erkenner bei JEDER kleinen Sprechpause schon ein "isFinal"-
+    // Ergebnis liefert - mitten im Satz. Im Einzelaeusserungs-Modus
+    // (false) erkennt der Browser dagegen zuverlaessig das echte Ende
+    // der Aeusserung (ueber eine eingebaute Sprachpausen-Erkennung) und
+    // liefert erst dann ein finales Ergebnis - das passt genau zum
+    // Frage-Antwort-Muster hier.
+    rec.continuous = false;
+    rec.interimResults = true;
+    rec.maxAlternatives = 1;
+    let done = false;
+    let finalText = "";
+    let interimText = "";
+    const startedAt = Date.now();
 
-async function warmUpModel() {
-  if (modelReady) return;
-  try {
-    setStatus("Lade Spracherkennungsmodell herunter …");
-    await loadWhisperModel((progress) => {
-      if (progress && progress.status === "progress" && typeof progress.progress === "number") {
-        setStatus(`Lade Spracherkennungsmodell … ${Math.round(progress.progress)}%`);
+    const finish = (text, hardFail) => {
+      if (done) return;
+      done = true;
+      clearTimeout(timer);
+      try { rec.stop(); } catch (e) {}
+      const trimmed = (text || "").trim();
+      recognitionHardFailStreak = trimmed ? 0 : (hardFail ? recognitionHardFailStreak + 1 : recognitionHardFailStreak);
+      resolve(trimmed);
+    };
+
+    rec.onresult = (e) => {
+      let interim = "";
+      let final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0] ? e.results[i][0].transcript : "";
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
       }
-    });
-    modelReady = true;
-    setStatus("Bereit");
-  } catch (e) {
-    setStatus("Spracherkennungsmodell konnte nicht geladen werden: " + e.message);
-  }
+      if (final) finalText += final;
+      interimText = interim;
+      if (onPartial) onPartial((finalText + " " + interimText).trim());
+      if (final) finish(finalText, false);
+    };
+    rec.onerror = (e) => {
+      const errType = e && e.error;
+      const instant = Date.now() - startedAt < 400;
+      const hard = RECOGNITION_HARD_ERRORS.has(errType) || (instant && errType !== "no-speech" && errType !== "aborted");
+      finish(finalText || interimText, hard);
+    };
+    rec.onend = () => {
+      const instant = Date.now() - startedAt < 400;
+      finish(finalText || interimText, instant);
+    };
+    const timer = setTimeout(() => finish(finalText || interimText, false), timeoutMs);
+    try { rec.start(); } catch (e) { finish("", true); }
+  });
 }
 
-let micHardFailStreak = 0;
-
-// Nimmt eine Antwort auf und transkribiert sie. Der erste (automatische)
-// Durchlauf ist immer dabei; erzwungene Deutsch-/Chinesisch-Durchlaeufe
-// laufen NUR mit, wenn dieser erste Versuch nicht schon zur erwarteten
-// Antwort (oder einem Kontrollbefehl) passt - jeder zusaetzliche
-// Durchlauf kostet auf einem Handy ohne GPU spuerbar Zeit.
-async function listenForAnswerCandidates({
-  maxWaitMs = 16000,
-  forceLanguages = ["german", "chinese"],
-  expectedField = null,
-  kind = null
-} = {}) {
-  let blob;
-  try {
-    blob = await recordUntilSilence({
-      maxWaitMs,
-      onLevel: (rms) => {
-        if (rms > 0.02) setStatus("Höre zu … 🎙️");
-      }
-    });
-    micHardFailStreak = 0;
-  } catch (e) {
-    micHardFailStreak++;
-    if (micHardFailStreak >= 2) reportSttBroken("Mikrofonzugriff fehlgeschlagen: " + e.message);
-    return [];
+// Der Erkennungsmotor selbst beendet eine Session oft schon nach ca.
+// 5 Sekunden Stille (ein interner "no-speech"-Timeout, unabhaengig von
+// unserem eigenen timeoutMs oben) - das reicht nicht zum Nachdenken.
+// Bei reiner Stille (kein hartes Kompatibilitaetsproblem) starten wir
+// direkt eine neue Session, bis das Gesamtbudget aufgebraucht ist oder
+// tatsaechlich etwas gesagt wurde.
+async function listenWithBudget(lang, totalBudgetMs, onPartial) {
+  const start = Date.now();
+  let result = "";
+  while (!result && Date.now() - start < totalBudgetMs) {
+    if (trainer.stopRequested) break;
+    const remaining = totalBudgetMs - (Date.now() - start);
+    result = await listenOnce(lang, Math.max(remaining, 1500), onPartial);
+    if (recognitionLooksBroken()) break;
   }
-
-  if (!blob) return [];
-
-  setPhase("Verarbeite …");
-  setStatus("Erkenne Sprache … (kann kurz dauern)");
-  try {
-    const results = await whisperTranscribe(blob, {
-      candidateLangs: forceLanguages,
-      shouldTryMore: (autoResult) => {
-        if (!expectedField) return true; // z.B. beim Wiederholen in der Korrektur
-        if (!autoResult.text) return true;
-        const quick = evaluateCandidates([autoResult], expectedField, kind);
-        return quick.control === null && quick.grade.verdict !== "correct" && quick.grade.verdict !== "close";
-      }
-    });
-    return results.filter((r) => r.text);
-  } catch (e) {
-    micHardFailStreak++;
-    if (micHardFailStreak >= 2) reportSttBroken("Spracherkennung fehlgeschlagen: " + e.message);
-    return [];
-  }
+  return result;
 }
 
-function reportSttBroken(detail) {
+function recognitionLooksBroken() {
+  return recognitionHardFailStreak >= 2;
+}
+
+function reportRecognitionBroken() {
   ui.compatWarning.textContent =
-    "Die Spracherkennung funktioniert auf diesem Gerät gerade nicht (" + detail + "). " +
-    "Bitte Internetverbindung/Mikrofon-Freigabe prüfen und die Seite neu laden.";
+    "Die Spracherkennung reagiert auf diesem Gerät/Browser nicht (bekanntes Problem z.B. in Safari " +
+    "auf iPhone/iPad). Bitte die Seite in Google Chrome öffnen (am besten auf Android).";
   ui.compatWarning.classList.remove("hidden");
   stopTraining();
-}
-
-// Kontrollbefehle ("Pause"/"weiter"/"weiß nicht") haben Vorrang, egal
-// welcher der Kandidaten sie enthaelt. Sonst wird ueber alle Kandidaten
-// die beste inhaltliche Bewertung gewaehlt - so zaehlt es, wenn
-// IRGENDEINE Interpretation der Aufnahme (automatisch erkannte Sprache
-// oder erzwungenes Deutsch/Chinesisch) zur erwarteten Antwort passt.
-const VERDICT_RANK = { correct: 3, close: 2, wrong: 1, unknown: 0 };
-
-function evaluateCandidates(results, expectedField, kind) {
-  for (const r of results) {
-    if (pauseWordDetected(r.text)) return { control: "pause", text: r.text };
-  }
-  for (const r of results) {
-    if (skipWordDetected(r.text)) return { control: "skip", text: r.text };
-  }
-  for (const r of results) {
-    const lower = r.text.toLowerCase();
-    if (UNKNOWN_PHRASES.some((p) => lower.includes(p))) {
-      return { control: null, text: r.text, grade: { verdict: "unknown", reason: "explicit" } };
-    }
-  }
-
-  let best = null;
-  for (const r of results) {
-    const grade = gradeAnswer(r.text, expectedField, kind);
-    if (!best || VERDICT_RANK[grade.verdict] > VERDICT_RANK[best.grade.verdict]) {
-      best = { control: null, text: r.text, grade };
-    }
-  }
-  if (!best) return { control: null, text: "", grade: { verdict: "unknown", reason: "empty" } };
-  return best;
 }
 
 /* ---------------------------------------------------------------------
@@ -740,6 +718,39 @@ async function askQuestion() {
   return entry;
 }
 
+async function listenForAnswer(lang) {
+  setPhase("Höre zu …");
+  setStatus("Bitte antworten");
+  await sleep(350); // kurze Pause: Audio muss von Lautsprecher auf Mikro umschalten
+
+  // Sofort im richtigen Modus zuhoeren, damit eine direkt losgesprochene
+  // Antwort nicht verloren geht (kein Vorab-Check mehr in einer anderen
+  // Sprache davor - der liess das Mikro zwar an, aber im falschen
+  // Modus, genau in den ersten Sekunden, in denen die Antwort meistens
+  // kommt).
+  const heard = await listenWithBudget(lang, 16000, (partial) => {
+    ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
+  });
+
+  // Nur falls WIRKLICH nichts erkannt wurde: "weiß nicht"/"Pause"/
+  // "weiter" werden immer auf Deutsch gesagt, auch wenn Chinesisch
+  // erwartet wird - der chinesische Erkenner transkribiert sowas oft zu
+  // gar nichts. Dieser Nachtrag kostet keine verpasste Antwortchance,
+  // da der Hauptversuch bereits leer ausgegangen ist.
+  if (!heard && lang !== "de-DE") {
+    const fallback = await listenOnce("de-DE", 2500, (partial) => {
+      ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
+    });
+    if (fallback) {
+      ui.cardHeard.textContent = `gehört: „${fallback}“`;
+      return fallback;
+    }
+  }
+
+  ui.cardHeard.textContent = heard ? `gehört: „${heard}“` : "(nichts verstanden)";
+  return heard;
+}
+
 async function runCorrection(entry, type) {
   for (let round = 0; round < 2; round++) {
     if (trainer.stopRequested) return;
@@ -750,10 +761,10 @@ async function runCorrection(entry, type) {
       await speak("Bitte wiederhole es.", "de-DE");
       setStatus("Bitte wiederholen (Chinesisch)");
       await sleep(350);
-      const results = await listenForAnswerCandidates({ maxWaitMs: 10000, forceLanguages: [] });
-      const text = results[0] ? results[0].text : "";
-      if (pauseWordDetected(text)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
-      if (skipWordDetected(text)) { await speak("Ok.", "de-DE"); return; }
+      const heard = await listenWithBudget("zh-CN", 10000);
+      if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
+      if (pauseWordDetected(heard)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
+      if (skipWordDetected(heard)) { await speak("Ok.", "de-DE"); return; }
     } else {
       await speak(entry.zh, "zh-CN");
       ui.cardPinyin.textContent = entry.pinyin;
@@ -761,15 +772,15 @@ async function runCorrection(entry, type) {
       await speak("Bitte wiederhole es.", "de-DE");
       setStatus("Bitte wiederholen (Chinesisch, dann Deutsch)");
       await sleep(350);
-      const results1 = await listenForAnswerCandidates({ maxWaitMs: 10000, forceLanguages: [] });
-      const text1 = results1[0] ? results1[0].text : "";
-      if (pauseWordDetected(text1)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
-      if (skipWordDetected(text1)) { await speak("Ok.", "de-DE"); return; }
+      const heard1 = await listenWithBudget("zh-CN", 10000);
+      if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
+      if (pauseWordDetected(heard1)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
+      if (skipWordDetected(heard1)) { await speak("Ok.", "de-DE"); return; }
       await sleep(350);
-      const results2 = await listenForAnswerCandidates({ maxWaitMs: 10000, forceLanguages: [] });
-      const text2 = results2[0] ? results2[0].text : "";
-      if (pauseWordDetected(text2)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
-      if (skipWordDetected(text2)) { await speak("Ok.", "de-DE"); return; }
+      const heard2 = await listenWithBudget("de-DE", 10000);
+      if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
+      if (pauseWordDetected(heard2)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
+      if (skipWordDetected(heard2)) { await speak("Ok.", "de-DE"); return; }
     }
   }
 }
@@ -779,28 +790,23 @@ async function runLoop() {
     const entry = await askQuestion();
     if (trainer.stopRequested) break;
 
-    const expectedField = trainer.currentType === "de2zh" ? entry.zh : entry.de;
-    const kind = trainer.currentType === "de2zh" ? "zh" : "de";
+    const answerLang = trainer.currentType === "de2zh" ? "zh-CN" : "de-DE";
+    const heard = await listenForAnswer(answerLang);
 
-    await sleep(350); // kurze Pause: Audio muss von Lautsprecher auf Mikro umschalten
-    setPhase("Höre zu …");
-    setStatus("Bitte antworten");
-    const results = await listenForAnswerCandidates({ expectedField, kind });
     if (trainer.stopRequested) break;
 
-    ui.cardHeard.textContent = results.length
-      ? results.map((r) => `${r.lang}: „${r.text}“`).join(" / ")
-      : "(nichts verstanden)";
+    if (recognitionLooksBroken()) {
+      reportRecognitionBroken();
+      break;
+    }
 
-    const evaluation = evaluateCandidates(results, expectedField, kind);
-
-    if (evaluation.control === "pause") {
+    if (pauseWordDetected(heard)) {
       await speak("Pause.", "de-DE");
       stopTraining();
       break;
     }
 
-    if (evaluation.control === "skip") {
+    if (skipWordDetected(heard)) {
       // Ueberspringen ohne Korrekturschleife - die Zeile wird trotzdem
       // spaeter nochmal drangenommen, da sie nicht beantwortet wurde.
       trainer.selector.scheduleRetry(trainer.currentIndex);
@@ -808,8 +814,9 @@ async function runLoop() {
       continue;
     }
 
-    const result = evaluation.grade;
-    const heard = evaluation.text;
+    const expectedField = trainer.currentType === "de2zh" ? entry.zh : entry.de;
+    const kind = trainer.currentType === "de2zh" ? "zh" : "de";
+    const result = gradeAnswer(heard, expectedField, kind);
 
     if (result.verdict === "correct") {
       setPhase("✅ Richtig");
@@ -853,23 +860,18 @@ async function runLoop() {
   }
 }
 
-async function startTraining() {
-  if (!sttSupported()) {
-    setStatus("Start nicht möglich: Mikrofonaufnahme wird von diesem Browser nicht unterstützt.");
+function startTraining() {
+  if (!SpeechRecognitionImpl) {
+    setStatus("Start nicht möglich: keine Spracherkennung verfügbar (siehe Hinweis oben).");
     return;
   }
   if (!trainer.entries.length) {
     setStatus("Keine Daten geladen. Bitte Einstellungen prüfen.");
     return;
   }
-  ui.startBtn.disabled = true;
-  await warmUpModel();
-  if (!modelReady) {
-    ui.startBtn.disabled = false;
-    return;
-  }
   trainer.running = true;
   trainer.stopRequested = false;
+  ui.startBtn.disabled = true;
   ui.pauseBtn.disabled = false;
   requestWakeLock();
   runLoop();
@@ -884,7 +886,6 @@ function stopTraining() {
   setPhase("");
   setStatus("Pausiert");
   releaseWakeLock();
-  releaseMic();
 }
 
 /* ---------------------------------------------------------------------
@@ -957,16 +958,12 @@ ui.reloadDataBtn.addEventListener("click", async () => {
  * ------------------------------------------------------------------- */
 
 (async function init() {
-  if (!sttSupported()) {
+  if (!SpeechRecognitionImpl) {
     ui.compatWarning.textContent =
-      "Dieser Browser unterstützt keine Mikrofonaufnahme (getUserMedia/MediaRecorder). " +
-      "Bitte einen aktuellen Browser verwenden (z.B. Chrome).";
+      "Dieser Browser unterstützt keine Spracherkennung (z.B. Samsung Internet oder iOS Safari). " +
+      "Bitte die Seite in Google Chrome öffnen, damit „Start“ funktioniert.";
     ui.compatWarning.classList.remove("hidden");
     ui.startBtn.disabled = true;
-  } else {
-    // Modell schon beim Laden der Seite im Hintergrund vorbereiten,
-    // damit der Download nicht erst beim ersten "Start" beginnt.
-    warmUpModel();
   }
   await loadData(true);
 })();

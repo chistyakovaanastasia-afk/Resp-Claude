@@ -53,44 +53,23 @@ aus dem Link, den du zuerst geschickt hast.
 - **Für die Nutzung ist ein Mikrofon-Zugriff nötig** — der Browser
   fragt das einmalig ab; bitte das erste Mal möglichst im Stand
   bestätigen.
-- **Vor der ersten Fahrt einmal zuhause im WLAN öffnen**: Die App lädt
-  beim ersten Start ein Spracherkennungsmodell herunter (siehe
-  "Spracherkennung" unten). Das dauert je nach Verbindung eine Weile;
-  danach ist es im Browser zwischengespeichert und funktioniert auch
-  offline.
 
-## Spracherkennung (Whisper, lokal im Browser)
+Empfohlener Browser: **Chrome** (Android) — hat die zuverlässigste
+Web-Spracherkennung für Deutsch und Chinesisch. iOS Safari unterstützt
+Spracherkennung nur eingeschränkt.
 
-Die App nutzt kein Server-basiertes Spracherkennungs-API und keine
-sprachfeste Browser-Funktion, sondern ein kostenloses, mehrsprachiges
-KI-Modell (**Whisper**, über [transformers.js](https://github.com/xenova/transformers.js)),
-das komplett lokal im Handy-Browser läuft:
+### Warum nicht ein lokales KI-Spracherkennungsmodell (Whisper)?
 
-- **Erkennt automatisch, welche Sprache du sprichst** (Deutsch oder
-  Chinesisch) — du musst dich nicht auf eine Richtung "festlegen".
-  Zusätzlich probiert die App bei Bedarf auch erzwungene Interpretationen
-  in beiden Sprachen und nimmt automatisch die, die zur erwarteten
-  Antwort passt.
-- **Kein Server, keine Kosten**: Das Modell wird einmalig von einem
-  öffentlichen CDN geladen und läuft danach offline im Browser (WebAssembly).
-  Es werden keine Audiodaten irgendwohin hochgeladen.
-- **Funktioniert auf mehr Geräten** als die eingebaute Browser-
-  Spracherkennung, die z. B. in Samsung Internet fehlt und auf iOS/iPadOS
-  unzuverlässig ist — hier reicht Mikrofonzugriff + WebAssembly, was
-  deutlich breiter unterstützt wird.
-- **Dafür spürbar langsamer**: Nach jeder Antwort verarbeitet das Modell
-  die Aufnahme (typischerweise ein paar Sekunden, abhängig vom Handy),
-  bevor die Bewertung kommt — das ist der Preis für "versteht wirklich,
-  egal in welcher Sprache" statt einer sofortigen, aber sprachfesten und
-  auf manchen Geräten kaputten Erkennung.
-- Die eigene Sprechpausen-Erkennung (nicht die Browser-API) entscheidet,
-  wann du fertig gesprochen hast: sie hört zu, bis nach Sprechbeginn eine
-  echte Pause kommt (nicht mehr nach der ersten kurzen Pause mitten im
-  Satz).
-
-Falls Mikrofonzugriff oder das Modell fehlschlagen, zeigt die App eine
-Warnung und pausiert automatisch, statt endlos ohne Rückmeldung
-weiterzulaufen.
+Das wurde ausprobiert: ein mehrsprachiges Modell direkt im Browser
+(ohne Server, ohne feste Sprachauswahl) hätte das Problem "muss vorher
+festlegen, ob Deutsch oder Chinesisch erwartet wird" elegant gelöst.
+In der Praxis war die Verarbeitung auf einem Handy ohne
+GPU-Beschleunigung aber so langsam (teils mehrere Minuten pro Antwort),
+dass es für eine Nutzung während der Fahrt unbrauchbar war — das ist
+eine Hardware-Grenze, keine Einstellung, die sich reparieren ließe.
+Die App nutzt deshalb wieder die schnelle, aber sprachfeste eingebaute
+Browser-Spracherkennung; die Sprache (Deutsch/Chinesisch) wird passend
+zur jeweils erwarteten Antwortrichtung automatisch eingestellt.
 
 ### Bildschirm & Sperre
 
@@ -141,24 +120,15 @@ kann. Am besten das Handy einfach mit dunklem Bildschirm liegen lassen
 
 ## Grenzen der automatischen Bewertung
 
-Die **Bewertung** selbst nutzt kein KI-Modell — die App vergleicht den
-von Whisper erkannten Text direkt und mit etwas Toleranz (Tippfehler/
-Alternativschreibweisen/Umformulierungen) gegen den Text aus der
-Tabelle. Das funktioniert gut bei einzelnen Wörtern und kurzen Sätzen,
-ist aber bei langen Dialogsätzen weniger präzise als eine echte
-Sprachverständnis-Bewertung. Bei Unsicherheit lieber "⚠️ Angenommen"
-als fälschlich "❌ Falsch" – im Zweifel kannst du im Verlauf
-(aufklappbare Liste unten in der App) nachsehen, was tatsächlich
-erkannt wurde.
-
-Die **Spracherkennung** selbst (Whisper) ist ein KI-Modell und macht
-trotzdem gelegentlich Fehler, besonders bei kurzen Einzelwörtern, Namen
-oder undeutlicher Aussprache — das lässt sich nie ganz auf null
-reduzieren. Aktuell kommt die kompakte Modellgröße "base" zum Einsatz
-(Kompromiss aus Genauigkeit und Ladezeit/Tempo auf dem Handy); falls dir
-die Erkennung zu ungenau ist, kann in `whisper-stt.js` (`MODEL_ID`) auf
-eine größere, genauere Modellgröße wie `Xenova/whisper-small` umgestellt
-werden — größer und langsamer, aber treffsicherer.
+Es gibt kein KI-Modell, das Antworten bewertet — die App vergleicht
+deine gesprochene Antwort (Spracherkennung) direkt und mit etwas
+Toleranz (Tippfehler/Alternativschreibweisen/Umformulierungen) gegen
+den Text aus der Tabelle. Das funktioniert gut bei einzelnen Wörtern
+und kurzen Sätzen, ist aber bei langen Dialogsätzen weniger präzise als
+eine echte Sprachverständnis-Bewertung. Bei Unsicherheit lieber
+"⚠️ Angenommen" als fälschlich "❌ Falsch" – im Zweifel kannst du im
+Verlauf (aufklappbare Liste unten in der App) nachsehen, was
+tatsächlich erkannt wurde.
 
 Die Auswahl-Logik kann keine "thematischen Gruppen" (z. B. Länder vs.
 Zahlen) erkennen, da die Tabelle keine Kategorie-Spalte hat — sie sorgt
