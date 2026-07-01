@@ -55,6 +55,20 @@ Empfohlener Browser: **Chrome** (Android) — hat die zuverlässigste
 Web-Spracherkennung für Deutsch und Chinesisch. iOS Safari unterstützt
 Spracherkennung nur eingeschränkt.
 
+### Bildschirm & Sperre
+
+Die App hält den Bildschirm während des Trainings aktiv (Wake Lock), damit
+das automatische Sperren nach kurzer Inaktivität nicht Mikrofon und
+Sprachausgabe unterbricht — das ist beim bloßen Zuhören/Sprechen ohne
+Bildschirmberührung sonst nach kurzer Zeit der Fall.
+
+Das hat eine technische Grenze: Wenn du das Handy manuell per Power-Taste
+sperrst oder zu einer anderen App wechselst (z. B. Navigation), pausiert
+das Betriebssystem den Browser-Tab inklusive Mikrofonzugriff — das ist
+eine Sicherheitsvorgabe von Android/iOS, die keine Browser-App umgehen
+kann. Am besten das Handy einfach mit dunklem Bildschirm liegen lassen
+(nicht sperren) oder eine Docking-Halterung ohne Sperrfunktion nutzen.
+
 ## Wie die Grundregeln technisch umgesetzt sind
 
 - **Kein Erfinden von Inhalten**: Es gibt keine Sprachgenerierung. Jede

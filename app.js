@@ -733,6 +733,7 @@ function startTraining() {
   trainer.stopRequested = false;
   ui.startBtn.disabled = true;
   ui.pauseBtn.disabled = false;
+  requestWakeLock();
   runLoop();
 }
 
@@ -744,7 +745,42 @@ function stopTraining() {
   ui.pauseBtn.disabled = true;
   setPhase("");
   setStatus("Pausiert");
+  releaseWakeLock();
 }
+
+/* ---------------------------------------------------------------------
+ * Wake Lock: haelt den Bildschirm waehrend des Trainings wach, damit
+ * das automatische Sperren des Handys (Inaktivitaets-Timeout) nicht
+ * Mikrofon/Sprachausgabe unterbricht. Wird die Seite trotzdem in den
+ * Hintergrund geschickt oder das Handy per Power-Taste gesperrt, pausiert
+ * der Browser den Zugriff auf das Mikrofon - das ist eine Sicherheits-
+ * vorgabe des Betriebssystems, die eine Web-App nicht umgehen kann.
+ * ------------------------------------------------------------------- */
+
+let wakeLock = null;
+
+async function requestWakeLock() {
+  if (!("wakeLock" in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release", () => { wakeLock = null; });
+  } catch (e) {
+    wakeLock = null;
+  }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) {
+    wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && trainer.running && !wakeLock) {
+    requestWakeLock();
+  }
+});
 
 /* ---------------------------------------------------------------------
  * Event-Wiring
