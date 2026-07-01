@@ -545,6 +545,24 @@ function listenOnce(lang, timeoutMs = 9000, onPartial) {
   });
 }
 
+// Der Erkennungsmotor selbst beendet eine Session oft schon nach ca.
+// 5 Sekunden Stille (ein interner "no-speech"-Timeout, unabhaengig von
+// unserem eigenen timeoutMs oben) - das reicht nicht zum Nachdenken.
+// Bei reiner Stille (kein hartes Kompatibilitaetsproblem) starten wir
+// direkt eine neue Session, bis das Gesamtbudget aufgebraucht ist oder
+// tatsaechlich etwas gesagt wurde.
+async function listenWithBudget(lang, totalBudgetMs, onPartial) {
+  const start = Date.now();
+  let result = "";
+  while (!result && Date.now() - start < totalBudgetMs) {
+    if (trainer.stopRequested) break;
+    const remaining = totalBudgetMs - (Date.now() - start);
+    result = await listenOnce(lang, Math.max(remaining, 1500), onPartial);
+    if (recognitionLooksBroken()) break;
+  }
+  return result;
+}
+
 function recognitionLooksBroken() {
   return recognitionHardFailStreak >= 2;
 }
@@ -685,7 +703,24 @@ async function listenForAnswer(lang) {
   setPhase("Höre zu …");
   setStatus("Bitte antworten");
   await sleep(350); // kurze Pause: Audio muss von Lautsprecher auf Mikro umschalten
-  const heard = await listenOnce(lang, 9000, (partial) => {
+
+  // "weiß nicht"/"Pause" werden immer auf Deutsch gesagt, auch wenn
+  // gerade eine chinesische Antwort erwartet wird - sonst versucht der
+  // chinesische Erkenner, das Deutsche als chinesische Laute zu
+  // deuten, und die Aussage geht verloren. Kurzer Vorab-Check auf
+  // Deutsch, bevor die eigentliche (laengere) Erkennung startet.
+  if (lang !== "de-DE") {
+    const preCheck = await listenOnce("de-DE", 3000, (partial) => {
+      ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
+    });
+    const preLower = preCheck.toLowerCase();
+    if (preCheck && (pauseWordDetected(preCheck) || UNKNOWN_PHRASES.some((p) => preLower.includes(p)))) {
+      ui.cardHeard.textContent = `gehört: „${preCheck}“`;
+      return preCheck;
+    }
+  }
+
+  const heard = await listenWithBudget(lang, 16000, (partial) => {
     ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
   });
   ui.cardHeard.textContent = heard ? `gehört: „${heard}“` : "(nichts verstanden)";
@@ -702,7 +737,7 @@ async function runCorrection(entry, type) {
       await speak("Bitte wiederhole es.", "de-DE");
       setStatus("Bitte wiederholen (Chinesisch)");
       await sleep(350);
-      const heard = await listenOnce("zh-CN", 7000);
+      const heard = await listenWithBudget("zh-CN", 10000);
       if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
     } else {
@@ -712,11 +747,11 @@ async function runCorrection(entry, type) {
       await speak("Bitte wiederhole es.", "de-DE");
       setStatus("Bitte wiederholen (Chinesisch, dann Deutsch)");
       await sleep(350);
-      const heard1 = await listenOnce("zh-CN", 7000);
+      const heard1 = await listenWithBudget("zh-CN", 10000);
       if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard1)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
       await sleep(350);
-      const heard2 = await listenOnce("de-DE", 7000);
+      const heard2 = await listenWithBudget("de-DE", 10000);
       if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard2)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
     }
