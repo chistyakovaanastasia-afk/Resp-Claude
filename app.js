@@ -709,29 +709,30 @@ async function listenForAnswer(lang) {
   setStatus("Bitte antworten");
   await sleep(350); // kurze Pause: Audio muss von Lautsprecher auf Mikro umschalten
 
-  // "weiß nicht"/"Pause"/"weiter" werden immer auf Deutsch gesagt, auch
-  // wenn gerade eine chinesische Antwort erwartet wird - sonst versucht
-  // der chinesische Erkenner, das Deutsche als chinesische Laute zu
-  // deuten, und die Aussage geht verloren. Kurzer Vorab-Check auf
-  // Deutsch, bevor die eigentliche (laengere) Erkennung startet.
-  if (lang !== "de-DE") {
-    const preCheck = await listenOnce("de-DE", 3000, (partial) => {
-      ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
-    });
-    const preLower = preCheck.toLowerCase();
-    if (preCheck && (
-      pauseWordDetected(preCheck) ||
-      skipWordDetected(preCheck) ||
-      UNKNOWN_PHRASES.some((p) => preLower.includes(p))
-    )) {
-      ui.cardHeard.textContent = `gehört: „${preCheck}“`;
-      return preCheck;
-    }
-  }
-
+  // Sofort im richtigen Modus zuhoeren, damit eine direkt losgesprochene
+  // Antwort nicht verloren geht (kein Vorab-Check mehr in einer anderen
+  // Sprache davor - der liess das Mikro zwar an, aber im falschen
+  // Modus, genau in den ersten Sekunden, in denen die Antwort meistens
+  // kommt).
   const heard = await listenWithBudget(lang, 16000, (partial) => {
     ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
   });
+
+  // Nur falls WIRKLICH nichts erkannt wurde: "weiß nicht"/"Pause"/
+  // "weiter" werden immer auf Deutsch gesagt, auch wenn Chinesisch
+  // erwartet wird - der chinesische Erkenner transkribiert sowas oft zu
+  // gar nichts. Dieser Nachtrag kostet keine verpasste Antwortchance,
+  // da der Hauptversuch bereits leer ausgegangen ist.
+  if (!heard && lang !== "de-DE") {
+    const fallback = await listenOnce("de-DE", 2500, (partial) => {
+      ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
+    });
+    if (fallback) {
+      ui.cardHeard.textContent = `gehört: „${fallback}“`;
+      return fallback;
+    }
+  }
+
   ui.cardHeard.textContent = heard ? `gehört: „${heard}“` : "(nichts verstanden)";
   return heard;
 }
