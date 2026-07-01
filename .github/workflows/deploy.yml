@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - claude/chinese-trainer-tool-d53yru
   workflow_dispatch:
 
 permissions:
