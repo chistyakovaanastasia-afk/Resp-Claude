@@ -460,6 +460,13 @@ function getRate() {
   return el ? parseFloat(el.value) : 0.95;
 }
 
+// Chinesische Stimmen klingen bei "normaler" Rate fuer Lernende oft
+// sehr schnell - deutlich staerker abbremsen als bei Deutsch.
+function rateFor(lang) {
+  const base = getRate();
+  return lang.startsWith("zh") ? base * 0.72 : base;
+}
+
 function speak(text, lang) {
   return new Promise((resolve) => {
     if (!synth || !text) return resolve();
@@ -468,7 +475,7 @@ function speak(text, lang) {
     u.lang = lang;
     const v = pickVoice(lang);
     if (v) u.voice = v;
-    u.rate = getRate();
+    u.rate = rateFor(lang);
     u.onend = () => resolve();
     u.onerror = () => resolve();
     synth.speak(u);
@@ -500,7 +507,14 @@ function listenOnce(lang, timeoutMs = 9000, onPartial) {
     if (!SpeechRecognitionImpl) return resolve("");
     const rec = new SpeechRecognitionImpl();
     rec.lang = lang;
-    rec.continuous = true;
+    // "continuous" klingt hilfreich, sorgt aber dafuer, dass der
+    // Erkenner bei JEDER kleinen Sprechpause schon ein "isFinal"-
+    // Ergebnis liefert - mitten im Satz. Im Einzelaeusserungs-Modus
+    // (false) erkennt der Browser dagegen zuverlaessig das echte Ende
+    // der Aeusserung (ueber eine eingebaute Sprachpausen-Erkennung) und
+    // liefert erst dann ein finales Ergebnis - das passt genau zum
+    // Frage-Antwort-Muster hier.
+    rec.continuous = false;
     rec.interimResults = true;
     rec.maxAlternatives = 1;
     let done = false;
