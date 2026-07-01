@@ -62,6 +62,18 @@ main {
   flex: 1;
 }
 
+.compatWarning {
+  background: #4a1c1c;
+  border: 1px solid var(--bad);
+  color: #ffd9d6;
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.compatWarning.hidden { display: none; }
+
 .status {
   text-align: center;
   font-size: 1rem;

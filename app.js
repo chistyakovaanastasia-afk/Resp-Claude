@@ -439,6 +439,7 @@ function listenOnce(lang, timeoutMs = 7000) {
  * ------------------------------------------------------------------- */
 
 const ui = {
+  compatWarning: document.getElementById("compatWarning"),
   status: document.getElementById("status"),
   phase: document.getElementById("phase"),
   cardType: document.getElementById("cardType"),
@@ -626,6 +627,10 @@ async function runLoop() {
 }
 
 function startTraining() {
+  if (!SpeechRecognitionImpl) {
+    setStatus("Start nicht möglich: keine Spracherkennung verfügbar (siehe Hinweis oben).");
+    return;
+  }
   if (!trainer.entries.length) {
     setStatus("Keine Daten geladen. Bitte Einstellungen prüfen.");
     return;
@@ -684,7 +689,11 @@ ui.reloadDataBtn.addEventListener("click", async () => {
 
 (async function init() {
   if (!SpeechRecognitionImpl) {
-    setStatus("Achtung: Dieser Browser unterstützt keine Spracherkennung (z.B. iOS Safari eingeschränkt). Chrome/Android empfohlen.");
+    ui.compatWarning.textContent =
+      "Dieser Browser unterstützt keine Spracherkennung (z.B. Samsung Internet oder iOS Safari). " +
+      "Bitte die Seite in Google Chrome öffnen, damit „Start“ funktioniert.";
+    ui.compatWarning.classList.remove("hidden");
+    ui.startBtn.disabled = true;
   }
   await loadData(true);
 })();
