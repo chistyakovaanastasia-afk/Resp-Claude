@@ -281,12 +281,18 @@ const UNKNOWN_PHRASES = [
 // Drei Stufen: "correct" (trifft es), "close" (inhaltlich nah dran /
 // unvollstaendig / andere Formulierung -> wird angenommen und ergaenzt),
 // "wrong"/"unknown" (trifft es nicht -> harte Korrekturschleife).
+// "reason" unterscheidet WARUM es nicht gereicht hat, fuer eine kurze,
+// konkrete Rueckmeldung statt einer immer gleichen Floskel:
+//   "empty"      - es wurde gar nichts erkannt (Mikro/Erkennung, nicht
+//                  zwingend eine falsche Antwort!)
+//   "explicit"   - du hast wörtlich gesagt, dass du es nicht weißt
+//   "no_match"   - es wurde etwas erkannt, aber es passt nicht
 function gradeAnswer(heard, expectedField, kind) {
   const raw = (heard || "").trim();
-  if (!raw) return { verdict: "unknown" };
+  if (!raw) return { verdict: "unknown", reason: "empty" };
   const lower = raw.toLowerCase();
   if (UNKNOWN_PHRASES.some((p) => lower.includes(p))) {
-    return { verdict: "unknown" };
+    return { verdict: "unknown", reason: "explicit" };
   }
 
   if (kind === "zh") {
@@ -295,13 +301,22 @@ function gradeAnswer(heard, expectedField, kind) {
     if (alts.includes(candidate)) return { verdict: "correct" };
     if (alts.some((a) => a.length > 0 && candidate.includes(a))) return { verdict: "correct" };
 
-    let bestOverlap = 0;
-    for (const a of alts) bestOverlap = Math.max(bestOverlap, charOverlap(candidate, a));
-    const { distance, alt } = bestMatchScore(candidate, alts);
+    // Bei kurzen Woertern (<=2 Zeichen, z.B. Laendernamen) ist jedes
+    // Zeichen ein eigenes Schriftzeichen mit eigener Bedeutung - "美国"
+    // und "法国" teilen sich "国", meinen aber komplett verschiedene
+    // Laender. Zeichen-Ueberlappung als Toleranz ergibt hier keinen
+    // Sinn, deshalb dort nur exakter Treffer. Ab 3 Zeichen (Saetze,
+    // laengere Ausdruecke) darf eine hohe Ueberlappung als "nah dran"
+    // durchgehen.
+    const longAlts = alts.filter((a) => a.length > 2);
+    if (!longAlts.length) return { verdict: "wrong", reason: "no_match" };
 
-    if (bestOverlap >= 0.7 || isClose(distance, alt.length, 0.3)) return { verdict: "correct" };
-    if (bestOverlap >= 0.35) return { verdict: "close" };
-    return { verdict: "wrong" };
+    let bestOverlap = 0;
+    for (const a of longAlts) bestOverlap = Math.max(bestOverlap, charOverlap(candidate, a));
+
+    if (bestOverlap >= 0.7) return { verdict: "correct" };
+    if (bestOverlap >= 0.45) return { verdict: "close" };
+    return { verdict: "wrong", reason: "no_match" };
   } else {
     const candidate = stripLeadingArticle(normalizeDe(raw));
     const candidateWords = tokenizeDe(candidate);
@@ -319,7 +334,7 @@ function gradeAnswer(heard, expectedField, kind) {
 
     if (bestOverlap >= 0.7 || isClose(distance, alt.length, 0.34)) return { verdict: "correct" };
     if (bestOverlap >= 0.3 || isClose(distance, alt.length, 0.5)) return { verdict: "close" };
-    return { verdict: "wrong" };
+    return { verdict: "wrong", reason: "no_match" };
   }
 }
 
@@ -752,9 +767,23 @@ async function runLoop() {
         await speak(entry.de, "de-DE");
       }
     } else {
-      setPhase(result.verdict === "unknown" ? "Kein Problem" : "❌ Falsch");
+      // Kurzer, konkreter Grund statt einer immer gleichen Floskel -
+      // "nicht verstanden" ist etwas anderes als "falsch uebersetzt".
+      let feedback;
+      let phaseLabel;
+      if (result.reason === "empty") {
+        feedback = "Nicht verstanden.";
+        phaseLabel = "🔇 Nicht verstanden";
+      } else if (result.reason === "explicit") {
+        feedback = "Kein Problem.";
+        phaseLabel = "Kein Problem";
+      } else {
+        feedback = "Falsch, falsche Übersetzung.";
+        phaseLabel = "❌ Falsch";
+      }
+      setPhase(phaseLabel);
       logEntry(trainer.currentType, entry, "wrong", heard);
-      await speak(result.verdict === "unknown" ? "Kein Problem." : "Falsch.", "de-DE");
+      await speak(feedback, "de-DE");
       trainer.selector.scheduleRetry(trainer.currentIndex);
       await runCorrection(entry, trainer.currentType);
     }
