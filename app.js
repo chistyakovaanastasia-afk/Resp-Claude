@@ -524,12 +524,17 @@ async function warmUpModel() {
 
 let micHardFailStreak = 0;
 
-// Nimmt eine Antwort auf und transkribiert sie. Liefert mehrere
-// Interpretationen desselben Audios (automatische Spracherkennung plus
-// erzwungene Versuche in Deutsch/Chinesisch), damit der Aufrufer die am
-// besten passende auswaehlen kann - das ist der Kern der
-// "versteh einfach, was ich sage, egal in welcher Sprache"-Faehigkeit.
-async function listenForAnswerCandidates({ maxWaitMs = 16000, forceLanguages = ["german", "chinese"] } = {}) {
+// Nimmt eine Antwort auf und transkribiert sie. Der erste (automatische)
+// Durchlauf ist immer dabei; erzwungene Deutsch-/Chinesisch-Durchlaeufe
+// laufen NUR mit, wenn dieser erste Versuch nicht schon zur erwarteten
+// Antwort (oder einem Kontrollbefehl) passt - jeder zusaetzliche
+// Durchlauf kostet auf einem Handy ohne GPU spuerbar Zeit.
+async function listenForAnswerCandidates({
+  maxWaitMs = 16000,
+  forceLanguages = ["german", "chinese"],
+  expectedField = null,
+  kind = null
+} = {}) {
   let blob;
   try {
     blob = await recordUntilSilence({
@@ -548,9 +553,17 @@ async function listenForAnswerCandidates({ maxWaitMs = 16000, forceLanguages = [
   if (!blob) return [];
 
   setPhase("Verarbeite …");
-  setStatus("Erkenne Sprache …");
+  setStatus("Erkenne Sprache … (kann kurz dauern)");
   try {
-    const results = await whisperTranscribe(blob, { candidateLangs: forceLanguages });
+    const results = await whisperTranscribe(blob, {
+      candidateLangs: forceLanguages,
+      shouldTryMore: (autoResult) => {
+        if (!expectedField) return true; // z.B. beim Wiederholen in der Korrektur
+        if (!autoResult.text) return true;
+        const quick = evaluateCandidates([autoResult], expectedField, kind);
+        return quick.control === null && quick.grade.verdict !== "correct" && quick.grade.verdict !== "close";
+      }
+    });
     return results.filter((r) => r.text);
   } catch (e) {
     micHardFailStreak++;
@@ -766,18 +779,19 @@ async function runLoop() {
     const entry = await askQuestion();
     if (trainer.stopRequested) break;
 
+    const expectedField = trainer.currentType === "de2zh" ? entry.zh : entry.de;
+    const kind = trainer.currentType === "de2zh" ? "zh" : "de";
+
     await sleep(350); // kurze Pause: Audio muss von Lautsprecher auf Mikro umschalten
     setPhase("Höre zu …");
     setStatus("Bitte antworten");
-    const results = await listenForAnswerCandidates();
+    const results = await listenForAnswerCandidates({ expectedField, kind });
     if (trainer.stopRequested) break;
 
     ui.cardHeard.textContent = results.length
       ? results.map((r) => `${r.lang}: „${r.text}“`).join(" / ")
       : "(nichts verstanden)";
 
-    const expectedField = trainer.currentType === "de2zh" ? entry.zh : entry.de;
-    const kind = trainer.currentType === "de2zh" ? "zh" : "de";
     const evaluation = evaluateCandidates(results, expectedField, kind);
 
     if (evaluation.control === "pause") {

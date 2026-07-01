@@ -20,7 +20,12 @@ import { pipeline, env } from "https://cdn.jsdelivr.net/npm/@xenova/transformers
 
 env.allowLocalModels = false;
 
-const MODEL_ID = "Xenova/whisper-base";
+// "tiny" statt "base": deutlich kleinerer Download und vor allem
+// deutlich schnellere Inferenz auf einem Handy ohne GPU-Beschleunigung
+// (WASM auf der CPU) - "base" fuehrte zu Wartezeiten von bis zu einer
+// Minute pro Antwort, was sich wie ein haengendes/ignorierendes Geraet
+// anfuehlte. "tiny" ist etwas ungenauer, aber tatsaechlich nutzbar.
+const MODEL_ID = "Xenova/whisper-tiny";
 
 let transcriberPromise = null;
 
@@ -162,14 +167,16 @@ async function decodeTo16kMono(blob) {
   return rendered.getChannelData(0);
 }
 
-// Transkribiert eine Aufnahme. Liefert zunaechst die automatische
+// Transkribiert eine Aufnahme. Liefert zunaechst NUR die automatische
 // Spracherkennung (Whisper erkennt die Sprache selbst - das ist der
-// Kern der Mehrsprachigkeit). Whisper's Spracherkennung ist bei sehr
-// kurzen Aeusserungen (einzelne Woerter) aber unzuverlaessiger, daher
-// liefert diese Funktion bei Bedarf zusaetzlich erzwungene Versuche in
-// den uebergebenen Kandidatensprachen mit - der Aufrufer waehlt dann
-// aus, welche Interpretation am besten zur erwarteten Antwort passt.
-export async function transcribe(blob, { candidateLangs = [], onProgress } = {}) {
+// Kern der Mehrsprachigkeit). Jeder weitere Durchlauf kostet auf einem
+// Handy ohne GPU spuerbar Zeit, daher werden die erzwungenen Versuche in
+// den uebergebenen Kandidatensprachen NUR ausgefuehrt, wenn
+// "shouldTryMore(autoResult)" true zurueckgibt (z.B. weil die
+// automatische Erkennung nicht zur erwarteten Antwort passt) - im
+// Normalfall (Antwort schon beim ersten Versuch erkannt) bleibt es bei
+// einem einzigen, schnellen Durchlauf.
+export async function transcribe(blob, { candidateLangs = [], onProgress, shouldTryMore } = {}) {
   const transcriber = await loadModel(onProgress);
   const audio = await decodeTo16kMono(blob);
 
@@ -177,14 +184,17 @@ export async function transcribe(blob, { candidateLangs = [], onProgress } = {})
   const auto = await transcriber(audio, { language: null, task: "transcribe" });
   results.push({ lang: "auto", text: (auto.text || "").trim() });
 
-  for (const lang of candidateLangs) {
-    try {
-      const forced = await transcriber(audio, { language: lang, task: "transcribe" });
-      const text = (forced.text || "").trim();
-      if (text && text !== results[0].text) results.push({ lang, text });
-    } catch (e) {
-      // Manche Sprachbezeichner werden von der jeweiligen Modellversion
-      // nicht akzeptiert - dann einfach ohne diesen Versuch weitermachen.
+  const needMore = candidateLangs.length && (!shouldTryMore || shouldTryMore(results[0]));
+  if (needMore) {
+    for (const lang of candidateLangs) {
+      try {
+        const forced = await transcriber(audio, { language: lang, task: "transcribe" });
+        const text = (forced.text || "").trim();
+        if (text && text !== results[0].text) results.push({ lang, text });
+      } catch (e) {
+        // Manche Sprachbezeichner werden von der jeweiligen Modellversion
+        // nicht akzeptiert - dann einfach ohne diesen Versuch weitermachen.
+      }
     }
   }
   return results;
