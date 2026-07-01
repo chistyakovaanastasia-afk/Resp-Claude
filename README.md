@@ -47,6 +47,9 @@ aus dem Link, den du zuerst geschickt hast.
   antwortest gesprochen → Bewertung (gesprochen) → nächste Frage.
 - **"Pause"** sagen (statt einer Antwort) beendet die Abfrage sofort,
   genau wie der Pause-Button.
+- **"Weiter"** sagen überspringt die aktuelle Frage sofort, ohne
+  Korrekturschleife (z. B. wenn die Erkennung dich mehrfach nicht
+  versteht). Die Zeile kommt später trotzdem nochmal dran.
 - **Für die Nutzung ist ein Mikrofon-Zugriff nötig** — der Browser
   fragt das einmalig ab; bitte das erste Mal möglichst im Stand
   bestätigen.

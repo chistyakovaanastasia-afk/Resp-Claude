@@ -674,6 +674,10 @@ function pauseWordDetected(text) {
   return /\bpause\b/i.test(text || "");
 }
 
+function skipWordDetected(text) {
+  return /\bweiter\b/i.test(text || "");
+}
+
 async function askQuestion() {
   const idx = trainer.selector.pickNext();
   trainer.currentIndex = idx;
@@ -704,9 +708,9 @@ async function listenForAnswer(lang) {
   setStatus("Bitte antworten");
   await sleep(350); // kurze Pause: Audio muss von Lautsprecher auf Mikro umschalten
 
-  // "weiß nicht"/"Pause" werden immer auf Deutsch gesagt, auch wenn
-  // gerade eine chinesische Antwort erwartet wird - sonst versucht der
-  // chinesische Erkenner, das Deutsche als chinesische Laute zu
+  // "weiß nicht"/"Pause"/"weiter" werden immer auf Deutsch gesagt, auch
+  // wenn gerade eine chinesische Antwort erwartet wird - sonst versucht
+  // der chinesische Erkenner, das Deutsche als chinesische Laute zu
   // deuten, und die Aussage geht verloren. Kurzer Vorab-Check auf
   // Deutsch, bevor die eigentliche (laengere) Erkennung startet.
   if (lang !== "de-DE") {
@@ -714,7 +718,11 @@ async function listenForAnswer(lang) {
       ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
     });
     const preLower = preCheck.toLowerCase();
-    if (preCheck && (pauseWordDetected(preCheck) || UNKNOWN_PHRASES.some((p) => preLower.includes(p)))) {
+    if (preCheck && (
+      pauseWordDetected(preCheck) ||
+      skipWordDetected(preCheck) ||
+      UNKNOWN_PHRASES.some((p) => preLower.includes(p))
+    )) {
       ui.cardHeard.textContent = `gehört: „${preCheck}“`;
       return preCheck;
     }
@@ -740,6 +748,7 @@ async function runCorrection(entry, type) {
       const heard = await listenWithBudget("zh-CN", 10000);
       if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
+      if (skipWordDetected(heard)) { await speak("Ok.", "de-DE"); return; }
     } else {
       await speak(entry.zh, "zh-CN");
       ui.cardPinyin.textContent = entry.pinyin;
@@ -750,10 +759,12 @@ async function runCorrection(entry, type) {
       const heard1 = await listenWithBudget("zh-CN", 10000);
       if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard1)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
+      if (skipWordDetected(heard1)) { await speak("Ok.", "de-DE"); return; }
       await sleep(350);
       const heard2 = await listenWithBudget("de-DE", 10000);
       if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard2)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
+      if (skipWordDetected(heard2)) { await speak("Ok.", "de-DE"); return; }
     }
   }
 }
@@ -777,6 +788,14 @@ async function runLoop() {
       await speak("Pause.", "de-DE");
       stopTraining();
       break;
+    }
+
+    if (skipWordDetected(heard)) {
+      // Ueberspringen ohne Korrekturschleife - die Zeile wird trotzdem
+      // spaeter nochmal drangenommen, da sie nicht beantwortet wurde.
+      trainer.selector.scheduleRetry(trainer.currentIndex);
+      await speak("Ok.", "de-DE");
+      continue;
     }
 
     const expectedField = trainer.currentType === "de2zh" ? entry.zh : entry.de;
