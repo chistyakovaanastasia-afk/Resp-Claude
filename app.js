@@ -465,6 +465,16 @@ function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+// Manche Browser (v.a. Safari auf iPhone/iPad) melden die
+// SpeechRecognition-Klasse als vorhanden, liefern aber nie ein
+// Ergebnis - sie beenden sofort mit Fehler oder "end", ohne je
+// zuzuhoeren. Das sieht fuer die Nutzerin genau wie ein normales
+// "nichts verstanden" aus, ist aber ein Kompatibilitaetsproblem, kein
+// Hoerfehler. Wir erkennen das an wiederholten sofortigen Abbruechen
+// und schlagen dann Alarm statt endlos weiterzulaufen.
+let recognitionHardFailStreak = 0;
+const RECOGNITION_HARD_ERRORS = new Set(["not-allowed", "service-not-allowed", "audio-capture"]);
+
 // Bleibt ueber kurze Sprechpausen hinweg aktiv (continuous) und nimmt
 // auch ein noch nicht "finales" Zwischenergebnis, falls die Erkennung
 // endet/timeoutet, bevor ein finales Ergebnis kam - sonst geht eine
@@ -480,13 +490,16 @@ function listenOnce(lang, timeoutMs = 9000, onPartial) {
     let done = false;
     let finalText = "";
     let interimText = "";
+    const startedAt = Date.now();
 
-    const finish = (text) => {
+    const finish = (text, hardFail) => {
       if (done) return;
       done = true;
       clearTimeout(timer);
       try { rec.stop(); } catch (e) {}
-      resolve((text || "").trim());
+      const trimmed = (text || "").trim();
+      recognitionHardFailStreak = trimmed ? 0 : (hardFail ? recognitionHardFailStreak + 1 : recognitionHardFailStreak);
+      resolve(trimmed);
     };
 
     rec.onresult = (e) => {
@@ -500,13 +513,33 @@ function listenOnce(lang, timeoutMs = 9000, onPartial) {
       if (final) finalText += final;
       interimText = interim;
       if (onPartial) onPartial((finalText + " " + interimText).trim());
-      if (final) finish(finalText);
+      if (final) finish(finalText, false);
     };
-    rec.onerror = () => finish(finalText || interimText);
-    rec.onend = () => finish(finalText || interimText);
-    const timer = setTimeout(() => finish(finalText || interimText), timeoutMs);
-    try { rec.start(); } catch (e) { finish(""); }
+    rec.onerror = (e) => {
+      const errType = e && e.error;
+      const instant = Date.now() - startedAt < 400;
+      const hard = RECOGNITION_HARD_ERRORS.has(errType) || (instant && errType !== "no-speech" && errType !== "aborted");
+      finish(finalText || interimText, hard);
+    };
+    rec.onend = () => {
+      const instant = Date.now() - startedAt < 400;
+      finish(finalText || interimText, instant);
+    };
+    const timer = setTimeout(() => finish(finalText || interimText, false), timeoutMs);
+    try { rec.start(); } catch (e) { finish("", true); }
   });
+}
+
+function recognitionLooksBroken() {
+  return recognitionHardFailStreak >= 2;
+}
+
+function reportRecognitionBroken() {
+  ui.compatWarning.textContent =
+    "Die Spracherkennung reagiert auf diesem Gerät/Browser nicht (bekanntes Problem z.B. in Safari " +
+    "auf iPhone/iPad). Bitte die Seite in Google Chrome öffnen (am besten auf Android).";
+  ui.compatWarning.classList.remove("hidden");
+  stopTraining();
 }
 
 /* ---------------------------------------------------------------------
@@ -655,6 +688,7 @@ async function runCorrection(entry, type) {
       setStatus("Bitte wiederholen (Chinesisch)");
       await sleep(350);
       const heard = await listenOnce("zh-CN", 7000);
+      if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
     } else {
       await speak(entry.zh, "zh-CN");
@@ -664,9 +698,11 @@ async function runCorrection(entry, type) {
       setStatus("Bitte wiederholen (Chinesisch, dann Deutsch)");
       await sleep(350);
       const heard1 = await listenOnce("zh-CN", 7000);
+      if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard1)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
       await sleep(350);
       const heard2 = await listenOnce("de-DE", 7000);
+      if (recognitionLooksBroken()) { reportRecognitionBroken(); return; }
       if (pauseWordDetected(heard2)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
     }
   }
@@ -681,6 +717,11 @@ async function runLoop() {
     const heard = await listenForAnswer(answerLang);
 
     if (trainer.stopRequested) break;
+
+    if (recognitionLooksBroken()) {
+      reportRecognitionBroken();
+      break;
+    }
 
     if (pauseWordDetected(heard)) {
       await speak("Pause.", "de-DE");
