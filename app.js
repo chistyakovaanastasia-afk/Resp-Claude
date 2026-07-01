@@ -169,8 +169,15 @@ function stripLeadingArticle(s) {
 
 function deAlternatives(deField) {
   const withoutParens = stripParens(deField);
+  // Kurze Eintraege ("insgesamt, zusammen") nutzen Kommas als
+  // Synonym-Trenner. Bei ganzen Saetzen ("So teuer, können Sie...")
+  // ist das Komma normale Grammatik, kein Synonym - dort nicht
+  // aufsplitten, sonst wird ein Halbsatz faelschlich als vollstaendige
+  // Antwort gewertet.
+  const wordCount = withoutParens.trim().split(/\s+/).filter(Boolean).length;
+  const sepPattern = wordCount <= 6 ? /[\/,;]/ : /[\/;]/;
   return withoutParens
-    .split(/[\/,;]/)
+    .split(sepPattern)
     .map((s) => stripLeadingArticle(normalizeDe(s)))
     .filter((s) => s.length > 0);
 }
@@ -233,11 +240,47 @@ function isClose(distance, altLength, ratioThreshold) {
   return distance / altLength <= ratioThreshold;
 }
 
+const GERMAN_STOPWORDS = new Set([
+  "der", "die", "das", "ein", "eine", "einen", "einem", "einer", "und",
+  "oder", "zu", "ist", "sind", "war", "ich", "du", "er", "sie", "es",
+  "wir", "ihr", "im", "in", "an", "auf", "mit", "für", "von", "zum",
+  "zur", "dem", "den", "des", "sich", "man", "auch", "so", "aber"
+]);
+
+function tokenizeDe(s) {
+  return s.split(/\s+/).filter((w) => w.length > 1 && !GERMAN_STOPWORDS.has(w));
+}
+
+// Wieviel Anteil der erwarteten Woerter kommt in der Antwort vor
+// (Reihenfolge und zusaetzliche eigene Worte spielen keine Rolle) -
+// erlaubt Umformulierungen und unvollstaendige Teilantworten.
+function wordOverlap(candidateWords, altWords) {
+  if (!altWords.length) return 0;
+  const candidateSet = new Set(candidateWords);
+  const matched = altWords.filter((w) => candidateSet.has(w)).length;
+  return matched / altWords.length;
+}
+
+// Gleiches Prinzip zeichenweise fuer Chinesisch (keine Wortgrenzen).
+function charOverlap(candidate, alt) {
+  if (!alt.length) return 0;
+  const counts = {};
+  for (const ch of alt) counts[ch] = (counts[ch] || 0) + 1;
+  let matched = 0;
+  for (const ch of candidate) {
+    if (counts[ch] > 0) { matched++; counts[ch]--; }
+  }
+  return matched / alt.length;
+}
+
 const UNKNOWN_PHRASES = [
   "weiß nicht", "weiss nicht", "keine ahnung", "weiß ich nicht",
   "weiss ich nicht", "ich weiß es nicht", "ich weiss es nicht"
 ];
 
+// Drei Stufen: "correct" (trifft es), "close" (inhaltlich nah dran /
+// unvollstaendig / andere Formulierung -> wird angenommen und ergaenzt),
+// "wrong"/"unknown" (trifft es nicht -> harte Korrekturschleife).
 function gradeAnswer(heard, expectedField, kind) {
   const raw = (heard || "").trim();
   if (!raw) return { verdict: "unknown" };
@@ -250,20 +293,32 @@ function gradeAnswer(heard, expectedField, kind) {
     const candidate = normalizeZh(raw);
     const alts = zhAlternatives(expectedField);
     if (alts.includes(candidate)) return { verdict: "correct" };
+    if (alts.some((a) => a.length > 0 && candidate.includes(a))) return { verdict: "correct" };
+
+    let bestOverlap = 0;
+    for (const a of alts) bestOverlap = Math.max(bestOverlap, charOverlap(candidate, a));
     const { distance, alt } = bestMatchScore(candidate, alts);
-    if (isClose(distance, alt.length, 0.3)) return { verdict: "close" };
+
+    if (bestOverlap >= 0.7 || isClose(distance, alt.length, 0.3)) return { verdict: "correct" };
+    if (bestOverlap >= 0.35) return { verdict: "close" };
     return { verdict: "wrong" };
   } else {
     const candidate = stripLeadingArticle(normalizeDe(raw));
+    const candidateWords = tokenizeDe(candidate);
     const alts = deAlternatives(expectedField);
     if (alts.includes(candidate)) return { verdict: "correct" };
-    // Auch prüfen, ob eine Alternative als Teilstring in einer laengeren
+    // Auch pruefen, ob eine Alternative als Teilstring in einer laengeren
     // gesprochenen Antwort enthalten ist (z.B. "ich glaube das heisst X").
     if (alts.some((a) => a.length > 2 && candidate.includes(a))) {
       return { verdict: "correct" };
     }
+
+    let bestOverlap = 0;
+    for (const a of alts) bestOverlap = Math.max(bestOverlap, wordOverlap(candidateWords, tokenizeDe(a)));
     const { distance, alt } = bestMatchScore(candidate, alts);
-    if (isClose(distance, alt.length, 0.34)) return { verdict: "close" };
+
+    if (bestOverlap >= 0.7 || isClose(distance, alt.length, 0.34)) return { verdict: "correct" };
+    if (bestOverlap >= 0.3 || isClose(distance, alt.length, 0.5)) return { verdict: "close" };
     return { verdict: "wrong" };
   }
 }
@@ -406,30 +461,50 @@ function speak(text, lang) {
 
 const SpeechRecognitionImpl = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-function listenOnce(lang, timeoutMs = 7000) {
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Bleibt ueber kurze Sprechpausen hinweg aktiv (continuous) und nimmt
+// auch ein noch nicht "finales" Zwischenergebnis, falls die Erkennung
+// endet/timeoutet, bevor ein finales Ergebnis kam - sonst geht eine
+// kurze oder leicht verzoegerte Antwort komplett verloren.
+function listenOnce(lang, timeoutMs = 9000, onPartial) {
   return new Promise((resolve) => {
     if (!SpeechRecognitionImpl) return resolve("");
     const rec = new SpeechRecognitionImpl();
     rec.lang = lang;
-    rec.interimResults = false;
+    rec.continuous = true;
+    rec.interimResults = true;
     rec.maxAlternatives = 1;
     let done = false;
+    let finalText = "";
+    let interimText = "";
+
     const finish = (text) => {
       if (done) return;
       done = true;
+      clearTimeout(timer);
       try { rec.stop(); } catch (e) {}
-      resolve(text);
+      resolve((text || "").trim());
     };
+
     rec.onresult = (e) => {
-      const text = e.results && e.results[0] && e.results[0][0]
-        ? e.results[0][0].transcript
-        : "";
-      finish(text);
+      let interim = "";
+      let final = "";
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0] ? e.results[i][0].transcript : "";
+        if (e.results[i].isFinal) final += t;
+        else interim += t;
+      }
+      if (final) finalText += final;
+      interimText = interim;
+      if (onPartial) onPartial((finalText + " " + interimText).trim());
+      if (final) finish(finalText);
     };
-    rec.onerror = () => finish("");
-    rec.onend = () => finish("");
-    const timer = setTimeout(() => finish(""), timeoutMs);
-    rec.onresult = ((orig) => (e) => { clearTimeout(timer); orig(e); })(rec.onresult);
+    rec.onerror = () => finish(finalText || interimText);
+    rec.onend = () => finish(finalText || interimText);
+    const timer = setTimeout(() => finish(finalText || interimText), timeoutMs);
     try { rec.start(); } catch (e) { finish(""); }
   });
 }
@@ -561,7 +636,10 @@ async function askQuestion() {
 async function listenForAnswer(lang) {
   setPhase("Höre zu …");
   setStatus("Bitte antworten");
-  const heard = await listenOnce(lang);
+  await sleep(350); // kurze Pause: Audio muss von Lautsprecher auf Mikro umschalten
+  const heard = await listenOnce(lang, 9000, (partial) => {
+    ui.cardHeard.textContent = partial ? `höre: „${partial}“` : "";
+  });
   ui.cardHeard.textContent = heard ? `gehört: „${heard}“` : "(nichts verstanden)";
   return heard;
 }
@@ -575,7 +653,8 @@ async function runCorrection(entry, type) {
       ui.cardPinyin.textContent = entry.pinyin;
       await speak("Bitte wiederhole es.", "de-DE");
       setStatus("Bitte wiederholen (Chinesisch)");
-      const heard = await listenOnce("zh-CN", 6000);
+      await sleep(350);
+      const heard = await listenOnce("zh-CN", 7000);
       if (pauseWordDetected(heard)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
     } else {
       await speak(entry.zh, "zh-CN");
@@ -583,9 +662,11 @@ async function runCorrection(entry, type) {
       await speak(entry.de, "de-DE");
       await speak("Bitte wiederhole es.", "de-DE");
       setStatus("Bitte wiederholen (Chinesisch, dann Deutsch)");
-      const heard1 = await listenOnce("zh-CN", 6000);
+      await sleep(350);
+      const heard1 = await listenOnce("zh-CN", 7000);
       if (pauseWordDetected(heard1)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
-      const heard2 = await listenOnce("de-DE", 6000);
+      await sleep(350);
+      const heard2 = await listenOnce("de-DE", 7000);
       if (pauseWordDetected(heard2)) { await speak("Pause.", "de-DE"); stopTraining(); return; }
     }
   }
@@ -615,11 +696,24 @@ async function runLoop() {
       setPhase("✅ Richtig");
       logEntry(trainer.currentType, entry, "correct", heard);
       await speak("Richtig.", "de-DE");
+    } else if (result.verdict === "close") {
+      // Inhaltlich angenommen (Synonym, Umformulierung oder nur
+      // unvollstaendig) - die App ergaenzt selbst die vollstaendige
+      // Referenz, statt eine harte Korrekturschleife zu erzwingen.
+      setPhase("⚠️ Angenommen");
+      logEntry(trainer.currentType, entry, "close", heard);
+      ui.cardPinyin.textContent = entry.pinyin;
+      if (trainer.currentType === "de2zh") {
+        await speak("Richtig, du kannst auch sagen:", "de-DE");
+        await speak(entry.zh, "zh-CN");
+      } else {
+        await speak("Richtig, vollständig heißt es:", "de-DE");
+        await speak(entry.de, "de-DE");
+      }
     } else {
-      const verdictLabel = result.verdict === "close" ? "close" : "wrong";
-      setPhase(result.verdict === "close" ? "⚠️ Fast richtig" : "❌ Falsch");
-      logEntry(trainer.currentType, entry, verdictLabel === "close" ? "close" : "wrong", heard);
-      await speak(result.verdict === "close" ? "Fast richtig." : "Falsch.", "de-DE");
+      setPhase(result.verdict === "unknown" ? "Kein Problem" : "❌ Falsch");
+      logEntry(trainer.currentType, entry, "wrong", heard);
+      await speak(result.verdict === "unknown" ? "Kein Problem." : "Falsch.", "de-DE");
       trainer.selector.scheduleRetry(trainer.currentIndex);
       await runCorrection(entry, trainer.currentType);
     }
