@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0b0f14">
+<title>Chinesisch Auto-Trainer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>汉语 Auto-Trainer</h1>
+    <button id="settingsBtn" aria-label="Einstellungen" class="iconBtn">⚙</button>
+  </header>
+
+  <main>
+    <div id="status" class="status">Bereit</div>
+    <div id="phase" class="phase"></div>
+
+    <div id="card" class="card">
+      <div id="cardType" class="cardType"></div>
+      <div id="cardPrompt" class="cardPrompt">Tippe „Start“, um zu beginnen.</div>
+      <div id="cardPinyin" class="cardPinyin"></div>
+      <div id="cardHeard" class="cardHeard"></div>
+    </div>
+
+    <div class="controls">
+      <button id="startBtn" class="bigBtn primary">▶ Start</button>
+      <button id="pauseBtn" class="bigBtn" disabled>⏸ Pause</button>
+    </div>
+
+    <div class="stats">
+      <span id="statLoaded">Keine Daten geladen</span>
+      <span id="statCount"></span>
+    </div>
+
+    <details id="log">
+      <summary>Verlauf</summary>
+      <ol id="logList"></ol>
+    </details>
+  </main>
+
+  <div id="settingsPanel" class="overlay hidden">
+    <div class="sheet">
+      <h2>Einstellungen</h2>
+      <label for="sheetUrlInput">Google-Sheet-Link (Tab „Alles“, im Web veröffentlicht / für „Jeder mit Link“ freigegeben)</label>
+      <input id="sheetUrlInput" type="text" placeholder="https://docs.google.com/spreadsheets/d/.../edit?gid=...">
+      <div class="settingsRow">
+        <button id="saveSettingsBtn" class="bigBtn primary">Speichern</button>
+        <button id="reloadDataBtn" class="bigBtn">Daten neu laden</button>
+      </div>
+      <p id="settingsMsg" class="hint"></p>
+      <hr>
+      <label for="voiceRateInput">Sprechgeschwindigkeit (Ansage)</label>
+      <input id="voiceRateInput" type="range" min="0.6" max="1.3" step="0.05" value="0.95">
+      <button id="closeSettingsBtn" class="bigBtn">Schließen</button>
+    </div>
+  </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
