@@ -112,12 +112,15 @@ async function translateToJapanese(text) {
 // ---------- Rakuten API ----------
 
 async function rakutenCheapest(appId, keyword) {
+  // Rakuten hat die API zum 2026-04-01 umgestellt (neue openapi-Adresse).
+  // Die UUID-Application-ID wird über die registrierte Domain (Referer)
+  // abgesichert; kein Access Key im Browser nötig. JSONP umgeht CORS.
   const data = await jsonp(
-    "https://app.rakuten.co.jp/services/api/IchibaItem/Search/20220601",
+    "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260401",
     {
       applicationId: appId,
       keyword: keyword,
-      sort: "+itemPrice", // aufsteigend nach Preis
+      sort: "+itemPrice", // aufsteigend nach Preis (günstigstes zuerst)
       hits: 5,
       format: "json",
       availability: 1,
