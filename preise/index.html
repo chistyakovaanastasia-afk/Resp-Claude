@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#0b0f14">
+<title>Japan Preis-Finder</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>🛒 Japan Preis-Finder</h1>
+    <button id="settingsBtn" aria-label="Einstellungen" class="iconBtn">⚙</button>
+  </header>
+
+  <main>
+    <form id="searchForm" autocomplete="off">
+      <input id="query" type="search" inputmode="search"
+             placeholder="Produktname eingeben (z. B. Sony WH-1000XM5)"
+             aria-label="Produktname" />
+      <button id="searchBtn" type="submit">Günstigsten Preis finden</button>
+    </form>
+
+    <p id="terms" class="terms hidden"></p>
+
+    <div id="status" class="status hidden"></div>
+
+    <!-- Automatischer Rakuten-Bestpreis -->
+    <section id="bestBox" class="bestBox hidden">
+      <div class="bestLabel">Günstigster automatischer Treffer · Rakuten</div>
+      <a id="bestLink" class="bestCard" href="#" target="_blank" rel="noopener">
+        <img id="bestImg" class="bestImg" alt="" />
+        <div class="bestInfo">
+          <div id="bestName" class="bestName"></div>
+          <div id="bestShop" class="bestShop"></div>
+          <div id="bestPrice" class="bestPrice"></div>
+          <span class="bestBuy">Jetzt kaufen ›</span>
+        </div>
+      </a>
+    </section>
+
+    <!-- Shop-Direktlinks (günstigstes zuerst) -->
+    <section id="shopLinks" class="shopLinks hidden">
+      <div class="shopLinksLabel">Bei den Shops nachsehen (nach Preis sortiert):</div>
+      <a id="linkRakuten" class="shopBtn rakuten" href="#" target="_blank" rel="noopener">
+        <span class="shopName">Rakuten</span>
+        <span class="shopHint">günstigstes zuerst ›</span>
+      </a>
+      <a id="linkAmazon" class="shopBtn amazon" href="#" target="_blank" rel="noopener">
+        <span class="shopName">Amazon.co.jp</span>
+        <span class="shopHint">günstigstes zuerst ›</span>
+      </a>
+      <a id="linkKakaku" class="shopBtn kakaku" href="#" target="_blank" rel="noopener">
+        <span class="shopName">Kakaku.com</span>
+        <span class="shopHint">günstigstes zuerst ›</span>
+      </a>
+    </section>
+  </main>
+
+  <!-- Einstellungen -->
+  <div id="settingsPanel" class="settingsPanel hidden">
+    <div class="settingsInner">
+      <h2>Einstellungen</h2>
+      <label class="fieldLabel" for="rakutenId">Rakuten App-ID (kostenlos, optional)</label>
+      <input id="rakutenId" type="text" placeholder="z. B. 1012345678901234567" />
+      <p class="hint">
+        Ohne App-ID funktionieren die Shop-Links unten weiterhin. <strong>Mit</strong>
+        App-ID zeigt das Tool oben zusätzlich automatisch den günstigsten
+        Rakuten-Preis + Kauflink an.
+        <br><br>
+        So bekommst du sie in ~1&nbsp;Minute:
+        <a href="https://webservice.rakuten.co.jp/app/create" target="_blank" rel="noopener">webservice.rakuten.co.jp</a>
+        → kostenlos anmelden → „アプリID/デベロッパーID“ kopieren → hier einfügen.
+      </p>
+      <div class="settingsButtons">
+        <button id="saveSettings" type="button">Speichern</button>
+        <button id="closeSettings" type="button" class="secondary">Schließen</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>

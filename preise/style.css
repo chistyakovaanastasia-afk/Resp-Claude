@@ -1,0 +1,207 @@
+:root {
+  color-scheme: dark;
+  --bg: #0b0f14;
+  --panel: #131a23;
+  --panel2: #1b2531;
+  --text: #eef3f8;
+  --muted: #93a2b3;
+  --accent: #2f9e6f;
+  --accent2: #38b884;
+  --rakuten: #bf0000;
+  --amazon: #ff9900;
+  --kakaku: #005bac;
+  --border: #26313d;
+}
+
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+html, body {
+  margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-size: 17px;
+  line-height: 1.4;
+}
+
+#app {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 12px) 16px
+           calc(env(safe-area-inset-bottom) + 24px);
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+h1 { font-size: 1.35rem; margin: 0; }
+
+.iconBtn {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: 1.2rem;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+
+/* Suche */
+#searchForm { display: flex; flex-direction: column; gap: 10px; }
+
+#query {
+  width: 100%;
+  padding: 15px 16px;
+  font-size: 1.05rem;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  color: var(--text);
+}
+#query:focus { outline: 2px solid var(--accent); border-color: var(--accent); }
+
+#searchBtn {
+  padding: 16px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 14px;
+  cursor: pointer;
+}
+#searchBtn:active { background: var(--accent2); }
+#searchBtn:disabled { opacity: .6; }
+
+.terms {
+  color: var(--muted);
+  font-size: .9rem;
+  margin: 14px 2px 0;
+}
+
+.status {
+  margin-top: 18px;
+  padding: 14px 16px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+}
+.status.error { color: #ffb4b4; border-color: #5a2b2b; }
+
+/* Rakuten Bestpreis-Karte */
+.bestBox { margin-top: 20px; }
+.bestLabel {
+  font-size: .8rem;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.bestCard {
+  display: flex;
+  gap: 14px;
+  padding: 14px;
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 16px;
+  text-decoration: none;
+  color: var(--text);
+}
+.bestImg {
+  width: 84px;
+  height: 84px;
+  object-fit: contain;
+  background: #fff;
+  border-radius: 10px;
+  flex-shrink: 0;
+}
+.bestImg[src=""], .bestImg:not([src]) { display: none; }
+.bestInfo { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.bestName {
+  font-weight: 600;
+  font-size: .98rem;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.bestShop { color: var(--muted); font-size: .85rem; }
+.bestPrice { font-size: 1.5rem; font-weight: 800; color: var(--accent2); margin-top: 2px; }
+.bestBuy { color: var(--accent2); font-weight: 700; font-size: .9rem; margin-top: 4px; }
+
+/* Shop-Links */
+.shopLinks { margin-top: 22px; display: flex; flex-direction: column; gap: 10px; }
+.shopLinksLabel { color: var(--muted); font-size: .9rem; margin-bottom: 2px; }
+.shopBtn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 18px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  text-decoration: none;
+  color: var(--text);
+  border-left: 5px solid var(--border);
+}
+.shopBtn.rakuten { border-left-color: var(--rakuten); }
+.shopBtn.amazon  { border-left-color: var(--amazon); }
+.shopBtn.kakaku  { border-left-color: var(--kakaku); }
+.shopName { font-weight: 700; }
+.shopHint { color: var(--muted); font-size: .85rem; }
+
+/* Einstellungen */
+.settingsPanel {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 50;
+}
+.settingsInner {
+  width: 100%;
+  max-width: 640px;
+  background: var(--panel);
+  border-top-left-radius: 20px;
+  border-top-right-radius: 20px;
+  padding: 22px 18px calc(env(safe-area-inset-bottom) + 22px);
+  border: 1px solid var(--border);
+}
+.settingsInner h2 { margin: 0 0 14px; font-size: 1.15rem; }
+.fieldLabel { display: block; font-size: .9rem; color: var(--muted); margin-bottom: 6px; }
+#rakutenId {
+  width: 100%;
+  padding: 13px 14px;
+  background: var(--panel2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  font-size: 1rem;
+}
+.hint { color: var(--muted); font-size: .85rem; margin: 12px 0 18px; }
+.hint a { color: var(--accent2); }
+.settingsButtons { display: flex; gap: 10px; }
+.settingsButtons button {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  border: none;
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+}
+.settingsButtons .secondary { background: var(--panel2); color: var(--text); border: 1px solid var(--border); }
+
+.hidden { display: none !important; }
