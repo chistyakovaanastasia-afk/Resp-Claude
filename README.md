@@ -1,162 +1,62 @@
-# 汉语 Auto-Trainer
+# 🛒 Japan Preis-Finder
 
-Ein reiner Sprach-Hör-und-Sprechtrainer für Chinesisch, gedacht zur
-Nutzung im Auto (Handy per Bluetooth mit dem Auto verbunden, hands-free
-per Sprache bedienbar). Es ist eine statische Web-App ohne Server und
-ohne KI-Textgenerierung: Fragen und Antworten kommen **ausschließlich**
-aus den geparsten Zeilen deiner Google-Tabelle "Alles" — es gibt keinen
-Schritt, der Inhalte erfinden könnte.
+Ein einfaches Online-Tool, um den günstigsten Preis für ein Produkt in
+Japan zu finden. Du gibst einen Namen ein (in beliebiger Sprache), das Tool
+sucht auf **Rakuten**, **Amazon.co.jp** und **Kakaku.com** — auf Wunsch mit
+japanischer Übersetzung — und führt dich zum günstigsten Angebot.
 
-## Einmalige Einrichtung
+Es ist eine **statische Web-App ohne Server**: einmal veröffentlicht,
+öffnest du sie per Link auf iPad, iPhone oder jedem Browser.
 
-### 1. Tabelle freigeben
+## Was das Tool automatisch kann — und was nicht
 
-Die App liest die Tabelle per öffentlichem CSV-Export-Link, damit beim
-Fahren kein Google-Login nötig ist:
+| Shop | Was passiert |
+|------|--------------|
+| **Rakuten** | Über die offizielle Rakuten-Schnittstelle wird der **günstigste Preis automatisch** geholt und mit Direkt-Kauflink angezeigt (¥). Benötigt eine kostenlose Rakuten App-ID. |
+| **Amazon.co.jp** | Ein Tipp öffnet die Amazon-Suche **nach Preis sortiert (günstigstes zuerst)**. |
+| **Kakaku.com** | Ein Tipp öffnet die Kakaku-Suche (zeigt je Produkt den günstigsten Händlerpreis). |
 
-1. Google Sheet öffnen → **Datei → Freigeben → Freigeben**.
-2. Unter "Allgemeiner Zugriff": **"Jeder mit dem Link"** → Rolle
-   **"Betrachter"** einstellen.
-3. Den Link (oder direkt den Link zum Tab "Alles", inkl. `gid=...`)
-   kopieren.
+**Warum nicht alles automatisch?** Amazon.co.jp und Kakaku.com blockieren
+das direkte Auslesen aus einem Browser (kein Server). Deshalb bekommst du
+dort mit einem Tipp die bereits nach Preis sortierten Ergebnisse — das ist
+der schnellste zuverlässige Weg zum günstigsten Angebot.
 
-Der Link ist dann nur für Personen abrufbar, die die (nicht erratbare)
-URL kennen — keine Suchmaschinen-Indexierung, aber technisch kein
-Passwortschutz. Für eine Vokabeltabelle ist das ein sinnvoller
-Kompromiss zwischen Bequemlichkeit im Auto und Datenschutz.
+## Rakuten App-ID einrichten (einmalig, kostenlos, ~1 Minute)
 
-### 2. App öffnen und Link eintragen
+Damit oben automatisch der günstigste Rakuten-Preis erscheint:
 
-1. Die Seite (`index.html`) im Handy-Browser öffnen (siehe
-   "Hosting" unten für GitHub Pages).
-2. Auf das Zahnrad ⚙ tippen → den kopierten Link einfügen → Speichern.
-3. Die App lädt sofort die aktuelle Tabelle und zeigt die Anzahl der
-   Einträge an.
+1. Öffne <https://webservice.rakuten.co.jp/app/create>
+2. Melde dich kostenlos an (Rakuten-Konto).
+3. Lege eine App an (beliebiger Name, als App-URL genügt z. B. die Adresse
+   dieses Tools oder `http://localhost`).
+4. Kopiere die **„アプリID / applicationId“** (eine lange Zahl).
+5. Im Tool auf **⚙ (oben rechts)** → App-ID einfügen → **Speichern**.
 
-Ohne eigenen Link nutzt die App standardmäßig genau die Tabelle "Alles"
-aus dem Link, den du zuerst geschickt hast.
+Die ID wird nur lokal in deinem Browser gespeichert (localStorage), nicht
+an Dritte gesendet. Ohne ID funktionieren die Shop-Links trotzdem.
 
-### 3. Für die Fahrt
+## Bedienung
 
-- Handy per Bluetooth mit dem Auto verbinden (wie gewohnt für Anrufe/
-  Musik) — Ausgabe läuft dann über die Auto-Lautsprecher, Mikrofon ist
-  das Handy-Mikrofon.
-- App öffnen, einmal auf **"▶ Start"** tippen (am besten vor
-  Fahrtbeginn oder an der Ampel).
-- Danach läuft der Trainer vollautomatisch: Frage (gesprochen) → du
-  antwortest gesprochen → Bewertung (gesprochen) → nächste Frage.
-- **"Pause"** sagen (statt einer Antwort) beendet die Abfrage sofort,
-  genau wie der Pause-Button.
-- **"Weiter"** sagen überspringt die aktuelle Frage sofort, ohne
-  Korrekturschleife (z. B. wenn die Erkennung dich mehrfach nicht
-  versteht). Die Zeile kommt später trotzdem nochmal dran.
-- **Für die Nutzung ist ein Mikrofon-Zugriff nötig** — der Browser
-  fragt das einmalig ab; bitte das erste Mal möglichst im Stand
-  bestätigen.
+1. Produktnamen eingeben (z. B. `Sony WH-1000XM5` oder `kabellose Kopfhörer`).
+2. Auf **„Günstigsten Preis finden“** tippen.
+3. Oben erscheint (mit App-ID) der günstigste Rakuten-Treffer mit
+   **„Jetzt kaufen“**-Link. Darunter die Buttons für Amazon.co.jp und
+   Kakaku.com, jeweils nach Preis sortiert.
 
-Empfohlener Browser: **Chrome** (Android) — hat die zuverlässigste
-Web-Spracherkennung für Deutsch und Chinesisch. iOS Safari unterstützt
-Spracherkennung nur eingeschränkt.
+Tipp: Für japanische Produkte liefert die japanische Suche oft mehr und
+günstigere Treffer — das Tool übersetzt den Namen dafür automatisch.
 
-### Warum nicht ein lokales KI-Spracherkennungsmodell (Whisper)?
+## Veröffentlichen (GitHub Pages)
 
-Das wurde ausprobiert: ein mehrsprachiges Modell direkt im Browser
-(ohne Server, ohne feste Sprachauswahl) hätte das Problem "muss vorher
-festlegen, ob Deutsch oder Chinesisch erwartet wird" elegant gelöst.
-In der Praxis war die Verarbeitung auf einem Handy ohne
-GPU-Beschleunigung aber so langsam (teils mehrere Minuten pro Antwort),
-dass es für eine Nutzung während der Fahrt unbrauchbar war — das ist
-eine Hardware-Grenze, keine Einstellung, die sich reparieren ließe.
-Die App nutzt deshalb wieder die schnelle, aber sprachfeste eingebaute
-Browser-Spracherkennung; die Sprache (Deutsch/Chinesisch) wird passend
-zur jeweils erwarteten Antwortrichtung automatisch eingestellt.
+Die App besteht nur aus `index.html`, `style.css`, `app.js`. Über den
+mitgelieferten Workflow `.github/workflows/deploy.yml` wird sie bei jedem
+Push auf den konfigurierten Branch automatisch zu GitHub Pages
+veröffentlicht. In den Repository-Einstellungen unter **Settings → Pages**
+als Quelle **„GitHub Actions“** wählen.
 
-### Bildschirm & Sperre
+## Technik
 
-Die App hält den Bildschirm während des Trainings aktiv (Wake Lock), damit
-das automatische Sperren nach kurzer Inaktivität nicht Mikrofon und
-Sprachausgabe unterbricht — das ist beim bloßen Zuhören/Sprechen ohne
-Bildschirmberührung sonst nach kurzer Zeit der Fall.
-
-Das hat eine technische Grenze: Wenn du das Handy manuell per Power-Taste
-sperrst oder zu einer anderen App wechselst (z. B. Navigation), pausiert
-das Betriebssystem den Browser-Tab inklusive Mikrofonzugriff — das ist
-eine Sicherheitsvorgabe von Android/iOS, die keine Browser-App umgehen
-kann. Am besten das Handy einfach mit dunklem Bildschirm liegen lassen
-(nicht sperren) oder eine Docking-Halterung ohne Sperrfunktion nutzen.
-
-## Wie die Grundregeln technisch umgesetzt sind
-
-- **Kein Erfinden von Inhalten**: Es gibt keine Sprachgenerierung. Jede
-  Frage ist ein Objekt `{nr, zh, pinyin, de}`, das direkt beim Parsen
-  der CSV-Datei entsteht. Auswahl passiert ausschließlich über einen
-  Zufallsindex in dieses Array — inhaltlich kann nichts "daneben"
-  sein.
-- **Zufällige, gestreute Auswahl**: Ein rollierendes Fenster verhindert
-  zu schnelle Wiederholung derselben Zeile, benachbarte Indizes werden
-  direkt hintereinander ausgeschlossen, und die Auswahl wechselt aktiv
-  zwischen erstem/mittlerem/letztem Drittel der Tabelle.
-- **Zwei Fragetypen** (Deutsch → Chinesisch / Chinesisch → Deutsch)
-  werden zufällig gemischt.
-- **Fehler-Wiederholung**: Bei ❌/⚠️/"weiß nicht" wird die korrekte
-  Antwort zweimal vorgesprochen und du wiederholst sie; danach kommt
-  die Zeile automatisch nach einigen anderen Fragen wieder dran
-  (garantiert, aber nicht sofort und nicht vorhersehbar platziert).
-- **Sprachausgabe fürs Auto**: Chinesische Wörter/Sätze werden mit
-  einer echten `zh-CN`-Stimme gesprochen (nicht als vorgelesene
-  Pinyin-Buchstaben, was auf einer Roman-Stimme unnatürlich klingen
-  würde). Pinyin wird zusätzlich nur **als Text auf dem Bildschirm**
-  angezeigt, nicht noch einmal vorgelesen — es gibt also keine
-  Doppel-Vorlesung von Zeichen und Pinyin in der Sprachausgabe.
-
-  > Das ist eine bewusste Abweichung von der ursprünglichen Regel
-  > "Pinyin statt Zeichen vorlesen": Jene Regel war für einen
-  > Chat-Assistenten mit eingebauter Text-Vorlese-Funktion gedacht.
-  > In dieser eigenständigen App steuern wir die Sprachausgabe direkt
-  > und können echtes chinesisches Audio erzeugen, was für einen
-  > *Hör*-Trainer eigentlich der Sinn der Übung ist. Wenn du
-  > stattdessen lieber die rohen Pinyin-Buchstaben von einer
-  > Nicht-Chinesisch-Stimme vorlesen lassen willst, sag Bescheid.
-
-## Grenzen der automatischen Bewertung
-
-Es gibt kein KI-Modell, das Antworten bewertet — die App vergleicht
-deine gesprochene Antwort (Spracherkennung) direkt und mit etwas
-Toleranz (Tippfehler/Alternativschreibweisen/Umformulierungen) gegen
-den Text aus der Tabelle. Das funktioniert gut bei einzelnen Wörtern
-und kurzen Sätzen, ist aber bei langen Dialogsätzen weniger präzise als
-eine echte Sprachverständnis-Bewertung. Bei Unsicherheit lieber
-"⚠️ Angenommen" als fälschlich "❌ Falsch" – im Zweifel kannst du im
-Verlauf (aufklappbare Liste unten in der App) nachsehen, was
-tatsächlich erkannt wurde.
-
-Die Auswahl-Logik kann keine "thematischen Gruppen" (z. B. Länder vs.
-Zahlen) erkennen, da die Tabelle keine Kategorie-Spalte hat — sie sorgt
-aber durch Drittel-Streuung und Abstandsregeln dafür, dass benachbarte
-Tabellenzeilen (die in dieser Tabelle oft thematisch zusammenhängen)
-nicht direkt hintereinander drankommen.
-
-## Hosting (GitHub Pages)
-
-Dieses Repo enthält einen Workflow (`.github/workflows/deploy.yml`),
-der die Seite automatisch auf GitHub Pages veröffentlicht.
-
-Einmalig in den Repo-Einstellungen aktivieren:
-
-1. **Settings → Pages → Build and deployment → Source**: auf
-   **"GitHub Actions"** stellen.
-2. Nach dem nächsten Push auf den Hauptbranch erscheint die URL unter
-   **Settings → Pages** (z. B. `https://<user>.github.io/<repo>/`).
-3. Diese URL auf dem Handy öffnen und zum Homescreen hinzufügen
-   ("Zum Startbildschirm hinzufügen"), damit sie sich wie eine App
-   verhält.
-
-## Lokal testen
-
-Da die App `fetch()` verwendet, sollte sie über `http(s)://` und nicht
-über `file://` geöffnet werden, z. B.:
-
-```bash
-python3 -m http.server 8080
-# dann im Browser: http://localhost:8080
-```
+- Reines HTML/CSS/JavaScript, keine Abhängigkeiten, kein Build-Schritt.
+- Rakuten Ichiba Item Search API (JSONP, umgeht CORS).
+- Übersetzung über die kostenlose MyMemory-API (ohne Schlüssel); schlägt sie
+  fehl, wird einfach mit dem Originalbegriff gesucht.
