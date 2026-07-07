@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - claude/chinese-trainer-tool-d53yru
+      - claude/price-comparison-tool-uix6vg
   workflow_dispatch:
 
 permissions:
