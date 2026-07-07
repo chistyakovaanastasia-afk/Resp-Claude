@@ -35,11 +35,13 @@ const els = {
   settingsBtn: $("settingsBtn"),
   settingsPanel: $("settingsPanel"),
   rakutenId: $("rakutenId"),
+  rakutenKey: $("rakutenKey"),
   saveSettings: $("saveSettings"),
   closeSettings: $("closeSettings"),
 };
 
 const LS_RAKUTEN = "jpf_rakuten_app_id";
+const LS_RAKUTEN_KEY = "jpf_rakuten_access_key";
 
 // ---------- Hilfsfunktionen ----------
 
@@ -111,21 +113,29 @@ async function translateToJapanese(text) {
 
 // ---------- Rakuten API ----------
 
-async function rakutenCheapest(appId, keyword) {
-  // Rakuten hat die API zum 2026-04-01 umgestellt (neue openapi-Adresse).
-  // Die UUID-Application-ID wird über die registrierte Domain (Referer)
-  // abgesichert; kein Access Key im Browser nötig. JSONP umgeht CORS.
-  const data = await jsonp(
-    "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260401",
-    {
+async function rakutenCheapest(appId, accessKey, keyword) {
+  // Rakuten-API 2026-04-01 (neue openapi-Adresse). Diese Version verlangt
+  // den Access Key als Request-Header, deshalb fetch() statt JSONP. Der Key
+  // liegt nur im localStorage des Browsers, nie im Code. Die registrierte
+  // Domain (Origin/Referer) wird von Rakuten zusätzlich geprüft.
+  const url =
+    "https://openapi.rakuten.co.jp/ichibams/api/IchibaItem/Search/20260401?" +
+    new URLSearchParams({
       applicationId: appId,
       keyword: keyword,
       sort: "+itemPrice", // aufsteigend nach Preis (günstigstes zuerst)
       hits: 5,
       format: "json",
       availability: 1,
-    }
-  );
+    }).toString();
+
+  const res = await fetch(url, { headers: { accessKey: accessKey } });
+  if (!res.ok) {
+    // 401/403 = Anmeldung; alles andere = Server/Netz.
+    throw new Error(res.status === 401 || res.status === 403
+      ? "invalid" : "HTTP " + res.status);
+  }
+  const data = await res.json();
   if (data && data.error) throw new Error(data.error_description || data.error);
   const items = (data && data.Items) || [];
   if (!items.length) return null;
@@ -182,12 +192,13 @@ async function runSearch(rawTerm) {
   els.terms.textContent = "Gesucht als: " + searchTerms.join("  ·  ");
   els.terms.classList.remove("hidden");
 
-  // Automatischer Rakuten-Bestpreis (nur mit App-ID).
+  // Automatischer Rakuten-Bestpreis (braucht App-ID UND Access Key).
   const appId = (localStorage.getItem(LS_RAKUTEN) || "").trim();
-  if (!appId) {
-    setStatus("Tipp: Trage in den Einstellungen (⚙) deine kostenlose " +
-      "Rakuten App-ID ein, dann zeige ich dir hier automatisch den " +
-      "günstigsten Rakuten-Preis. Die Shop-Links unten funktionieren " +
+  const accessKey = (localStorage.getItem(LS_RAKUTEN_KEY) || "").trim();
+  if (!appId || !accessKey) {
+    setStatus("Tipp: Trage in den Einstellungen (⚙) deine kostenlose Rakuten " +
+      "App-ID UND den Access Key ein, dann zeige ich dir hier automatisch " +
+      "den günstigsten Rakuten-Preis. Die Shop-Links unten funktionieren " +
       "schon jetzt.");
     els.searchBtn.disabled = false;
     return;
@@ -195,18 +206,22 @@ async function runSearch(rawTerm) {
 
   try {
     const results = [];
+    let lastError = null;
     for (const kw of searchTerms) {
       try {
-        const r = await rakutenCheapest(appId, kw);
+        const r = await rakutenCheapest(appId, accessKey, kw);
         if (r) results.push(r);
       } catch (e) {
-        // Einzelne Anfrage fehlgeschlagen — andere Begriffe trotzdem versuchen.
-        if (/wrong parameter|not found|invalid/i.test(e.message)) throw e;
+        lastError = e;
+        // Ungültige Zugangsdaten -> sofort abbrechen, sonst weiter versuchen.
+        if (/invalid|parameter|application/i.test(e.message)) throw e;
       }
     }
 
     if (!results.length) {
-      setStatus("Kein Rakuten-Treffer. Sieh über die Shop-Links unten nach.");
+      if (lastError) throw lastError;
+      setStatus("Kein Rakuten-Treffer für diesen Namen. " +
+        "Sieh über die Shop-Links unten nach.");
       els.searchBtn.disabled = false;
       return;
     }
@@ -215,8 +230,9 @@ async function runSearch(rawTerm) {
     showBest(results[0]);
     setStatus("");
   } catch (e) {
-    const msg = /parameter|invalid|application/i.test(e.message)
-      ? "Rakuten App-ID scheint ungültig. Bitte in den Einstellungen (⚙) prüfen."
+    const msg = /invalid|parameter|application/i.test(e.message)
+      ? "Rakuten-Zugangsdaten (App-ID oder Access Key) scheinen ungültig " +
+        "oder die Domain ist nicht freigegeben. Bitte in den Einstellungen (⚙) prüfen."
       : "Rakuten gerade nicht erreichbar (" + e.message + "). " +
         "Nutze die Shop-Links unten.";
     setStatus(msg, true);
@@ -239,15 +255,21 @@ function showBest(item) {
 
 function openSettings() {
   els.rakutenId.value = localStorage.getItem(LS_RAKUTEN) || "";
+  els.rakutenKey.value = localStorage.getItem(LS_RAKUTEN_KEY) || "";
   els.settingsPanel.classList.remove("hidden");
 }
 function closeSettings() { els.settingsPanel.classList.add("hidden"); }
 function saveSettings() {
-  const v = els.rakutenId.value.trim();
-  if (v) localStorage.setItem(LS_RAKUTEN, v);
+  const id = els.rakutenId.value.trim();
+  const key = els.rakutenKey.value.trim();
+  if (id) localStorage.setItem(LS_RAKUTEN, id);
   else localStorage.removeItem(LS_RAKUTEN);
+  if (key) localStorage.setItem(LS_RAKUTEN_KEY, key);
+  else localStorage.removeItem(LS_RAKUTEN_KEY);
   closeSettings();
-  setStatus(v ? "Rakuten App-ID gespeichert." : "Rakuten App-ID entfernt.");
+  setStatus(id && key
+    ? "Rakuten-Zugangsdaten gespeichert."
+    : "Rakuten-Zugangsdaten (App-ID + Access Key) noch unvollständig.");
 }
 
 // ---------- Events ----------

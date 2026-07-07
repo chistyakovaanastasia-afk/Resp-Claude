@@ -66,16 +66,23 @@
   <div id="settingsPanel" class="settingsPanel hidden">
     <div class="settingsInner">
       <h2>Einstellungen</h2>
-      <label class="fieldLabel" for="rakutenId">Rakuten App-ID (kostenlos, optional)</label>
-      <input id="rakutenId" type="text" placeholder="z. B. 1012345678901234567" />
+      <label class="fieldLabel" for="rakutenId">Rakuten Application ID</label>
+      <input id="rakutenId" type="text" autocomplete="off" autocapitalize="off"
+             spellcheck="false" placeholder="z. B. cbc9b464-d49f-428d-…" />
+      <label class="fieldLabel" for="rakutenKey">Rakuten Access Key</label>
+      <input id="rakutenKey" type="password" autocomplete="off" autocapitalize="off"
+             spellcheck="false" placeholder="geheimer Schlüssel" />
       <p class="hint">
-        Ohne App-ID funktionieren die Shop-Links unten weiterhin. <strong>Mit</strong>
-        App-ID zeigt das Tool oben zusätzlich automatisch den günstigsten
-        Rakuten-Preis + Kauflink an.
+        Beide findest du bei deiner App auf
+        <a href="https://webservice.rakuten.co.jp/app/list" target="_blank" rel="noopener">webservice.rakuten.co.jp</a>
+        (Application ID + Access Key). Ohne beide funktionieren die Shop-Links
+        unten weiterhin. <strong>Mit</strong> beiden zeigt das Tool oben
+        automatisch den günstigsten Rakuten-Preis + Kauflink an.
         <br><br>
-        So bekommst du sie in ~1&nbsp;Minute:
-        <a href="https://webservice.rakuten.co.jp/app/create" target="_blank" rel="noopener">webservice.rakuten.co.jp</a>
-        → kostenlos anmelden → „アプリID/デベロッパーID“ kopieren → hier einfügen.
+        🔒 Beide Werte werden <strong>nur in diesem Browser</strong> gespeichert
+        (localStorage), nie an Dritte gesendet und nicht im Code abgelegt. Nutze
+        das Tool nicht auf fremden Geräten. Den Access Key kannst du bei Rakuten
+        jederzeit neu erzeugen.
       </p>
       <div class="settingsButtons">
         <button id="saveSettings" type="button">Speichern</button>
