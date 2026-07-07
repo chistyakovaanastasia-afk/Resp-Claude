@@ -142,12 +142,12 @@ async function rakutenCheapest(appId, keyword) {
 function shopSearchUrls(term) {
   const q = encodeURIComponent(term);
   return {
-    // Rakuten-Suche, s=12 = Preis aufsteigend
-    rakuten: `https://search.rakuten.co.jp/search/mall/${q}/?s=12`,
+    // Rakuten-Suche, s=11 = Preis aufsteigend (günstigstes zuerst)
+    rakuten: `https://search.rakuten.co.jp/search/mall/${q}/?s=11`,
     // Amazon.co.jp, nach Preis aufsteigend sortiert
     amazon: `https://www.amazon.co.jp/s?k=${q}&s=price-asc-rank`,
-    // Kakaku.com Suchergebnis (listet die jeweils günstigsten Preise)
-    kakaku: `https://kakaku.com/search_results/${q}/`,
+    // Kakaku.com: search.kakaku.com ist die eigentliche Such-Domain
+    kakaku: `https://search.kakaku.com/${q}/`,
   };
 }
 
