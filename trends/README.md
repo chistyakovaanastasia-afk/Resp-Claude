@@ -34,27 +34,42 @@ Alle Einträge liegen in [`data.json`](./data.json) unter `entries[]`, plus
 ein `meta`-Block mit letztem/nächstem Recherche-Datum und Runden-Zähler.
 Alle 2 Wochen kommt automatisiert eine neue Recherche-Runde hinzu (siehe
 unten) — bestehende Einträge werden **nicht** gelöscht, das Dashboard
-wächst als Archiv.
+wächst als Archiv. Die Reihenfolge in der Datei ist egal, da das UI
+standardmässig nach `dateAdded` sortiert (**neueste Trends immer oben**).
 
 ### Wie eine automatisierte Update-Runde ablaufen soll
 
-Das führt eine Claude-Session periodisch nachts aus (wenig Nutzungslast).
-Ablauf pro Runde:
+Eine Claude-Routine wird alle 14 Tage exakt zum nächsten Termin neu
+ausgelöst (kein wöchentliches Polling mit Schwellenwert-Prüfung — die
+Terminierung selbst sorgt für den 2-Wochen-Abstand, siehe unten). Ablauf
+pro Runde:
 
-1. `trends/data.json` lesen, `meta.lastRun` prüfen. Nur weiterlaufen, wenn
-   seit `lastRun` **mindestens 13 Tage** vergangen sind (Selbstkorrektur,
-   falls ein Lauf ausfällt).
+1. `trends/data.json` lesen — sowohl `meta` als auch die **vollständige
+   Liste bestehender `entries`** (insbesondere die Felder `trend` und
+   `businessIdee`).
 2. Aktuelle globale und Schweizer Trends recherchieren (Websuche), die zu
    kleinen, schnell realisierbaren Geld-Ideen passen — Mischung aus global
-   und lokal (CH) beibehalten.
-3. 5–8 neue Einträge nach obigem Schema ergänzen (nicht ersetzen), mit
-   fortlaufender `cycle`-Nummer und realer Quelle je Eintrag. Nur
-   `aufwand: "niedrig"` oder `"mittel"` aufnehmen.
-4. `meta.lastRun`, `meta.nextRunApprox` und `meta.cycle` aktualisieren.
-5. Änderungen committen und pushen.
-6. Kurze Push-Benachrichtigung an die Nutzerin senden (Link zur Seite).
-7. Sicherstellen, dass die nächste Routine-Ausführung weiterhin eingeplant
-   ist (ggf. neu terminieren).
+   und lokal (CH) beibehalten. Die Situation kann sich seit der letzten
+   Runde verändert haben, es wird also frisch recherchiert, nicht aus dem
+   Gedächtnis wiederholt.
+3. **Keine Wiederholungen**: Vor dem Hinzufügen jeden neuen Kandidaten
+   gegen alle vorhandenen `entries` abgleichen (Thema/Kernidee, nicht nur
+   exakter Titel-Wortlaut). Ist ein Trend im Kern schon vorhanden:
+   - Wenn es nur ein spürbares Update ist (neue Zahl, neues Beispiel),
+     das bestehende Feld `beispiel`/`rating` in-place aktualisieren statt
+     einen neuen Eintrag anzulegen.
+   - Sonst überspringen und einen wirklich neuen Trend suchen.
+4. 5–8 wirklich neue Einträge nach dem Schema ergänzen, mit fortlaufender
+   `cycle`-Nummer, eindeutiger `id` (z. B. `c<cycle>-<lfd. Nr.>`) und
+   realer Quelle je Eintrag. Nur `aufwand: "niedrig"` oder `"mittel"`
+   aufnehmen.
+5. `meta.lastRun`, `meta.nextRunApprox` und `meta.cycle` aktualisieren.
+6. Änderungen committen und pushen.
+7. Kurze Push-Benachrichtigung an die Nutzerin senden (Link zur Seite).
+8. **Die nächste Routine-Ausführung selbst terminieren**: einen neuen
+   One-Shot-Trigger für exakt 14 Tage später (gleiche Nachtzeit) anlegen,
+   der wiederum eine frische Session mit dieser Anleitung startet. Ohne
+   diesen Schritt bricht die Kette ab.
 
 ## Hosting (GitHub Pages)
 

@@ -4,7 +4,7 @@ const state = {
   scope: "alle",
   aufwand: "alle",
   minRating: 0,
-  sort: "rating",
+  sort: "date",
 };
 
 const els = {
