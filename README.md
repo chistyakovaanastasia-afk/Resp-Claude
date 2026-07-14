@@ -1,3 +1,21 @@
+# Was ist in diesem Repository?
+
+Dieses Repository ist historisch gewachsen und enthält mehrere
+unabhängige kleine Projekte:
+
+| Projekt | Wo | Was es ist |
+|---|---|---|
+| **汉语 Auto-Trainer** | Hauptverzeichnis (`index.html`, `app.js`) | Chinesisch-Sprachtrainer fürs Auto — siehe Anleitung unten |
+| **Preisvergleich Japan** | `/preise/` | Preis-Finder-Tool (Rakuten/Kakaku) |
+| **Trend-Radar** | `/trends/` | Zweiwöchentliche Trend-Analyse |
+| **Trading-Bot** | Branch `claude/trading-bot` | Börsen-Beobachtung mit Spielgeld (Paper Trading) — zieht in ein eigenes Repository um |
+
+Die GitHub-Pages-Webseite dieses Repositories veröffentlicht den
+Auto-Trainer und die Unterordner. Der Rest dieses READMEs beschreibt
+den Auto-Trainer.
+
+---
+
 # 汉语 Auto-Trainer
 
 Ein reiner Sprach-Hör-und-Sprechtrainer für Chinesisch, gedacht zur
