@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - claude/chinese-trainer-tool-d53yru
+      - claude/trends-analysis-biweekly-1ozz8c
   workflow_dispatch:
 
 permissions:
