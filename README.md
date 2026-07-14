@@ -6,7 +6,7 @@ unabhängige kleine Projekte:
 | Projekt | 🔗 Tool öffnen | Code |
 |---|---|---|
 | **汉语 Auto-Trainer** | **<https://chistyakovaanastasia-afk.github.io/Resp-Claude/>** | Hauptverzeichnis (`index.html`, `app.js`) |
-| **🛒 Japan Preis-Finder** | **<https://chistyakovaanastasia-afk.github.io/Resp-Claude/preise/>** | eigenes Repo: [japan-preis-finder](https://github.com/chistyakovaanastasia-afk/japan-preis-finder) |
+| **🛒 Japan Preis-Finder** | **<https://chistyakovaanastasia-afk.github.io/japan-preis-finder/>** | eigenes Repo: [japan-preis-finder](https://github.com/chistyakovaanastasia-afk/japan-preis-finder) |
 | **📈 Trend-Radar** | **<https://chistyakovaanastasia-afk.github.io/Resp-Claude/trends/>** | `/trends/` |
 | **🤖 Trading-Bot** | läuft im Hintergrund (kein Web-Tool) — Berichte kommen per Claude-Chat | Branch [`claude/trading-bot`](https://github.com/chistyakovaanastasia-afk/Resp-Claude/tree/claude/trading-bot/trading-bot) |
 
