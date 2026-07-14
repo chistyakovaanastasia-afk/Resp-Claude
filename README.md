@@ -3,12 +3,12 @@
 Dieses Repository ist historisch gewachsen und enthält mehrere
 unabhängige kleine Projekte:
 
-| Projekt | Wo | Was es ist |
+| Projekt | 🔗 Tool öffnen | Code |
 |---|---|---|
-| **汉语 Auto-Trainer** | Hauptverzeichnis (`index.html`, `app.js`) | Chinesisch-Sprachtrainer fürs Auto — siehe Anleitung unten |
-| **Preisvergleich Japan** | `/preise/` | Preis-Finder-Tool (Rakuten/Kakaku) |
-| **Trend-Radar** | `/trends/` | Zweiwöchentliche Trend-Analyse |
-| **Trading-Bot** | Branch `claude/trading-bot` | Börsen-Beobachtung mit Spielgeld (Paper Trading) — zieht in ein eigenes Repository um |
+| **汉语 Auto-Trainer** | **<https://chistyakovaanastasia-afk.github.io/Resp-Claude/>** | Hauptverzeichnis (`index.html`, `app.js`) |
+| **🛒 Japan Preis-Finder** | **<https://chistyakovaanastasia-afk.github.io/Resp-Claude/preise/>** | eigenes Repo: [japan-preis-finder](https://github.com/chistyakovaanastasia-afk/japan-preis-finder) |
+| **📈 Trend-Radar** | **<https://chistyakovaanastasia-afk.github.io/Resp-Claude/trends/>** | `/trends/` |
+| **🤖 Trading-Bot** | läuft im Hintergrund (kein Web-Tool) — Berichte kommen per Claude-Chat | Branch [`claude/trading-bot`](https://github.com/chistyakovaanastasia-afk/Resp-Claude/tree/claude/trading-bot/trading-bot) |
 
 Die GitHub-Pages-Webseite dieses Repositories veröffentlicht den
 Auto-Trainer und die Unterordner. Der Rest dieses READMEs beschreibt
