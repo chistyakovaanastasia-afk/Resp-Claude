@@ -148,24 +148,66 @@ input:focus, select:focus {
 .badge.aufwand-niedrig { color: var(--accent); border-color: var(--accent-dim); }
 .badge.aufwand-mittel { color: var(--warn); border-color: #6b5326; }
 
-.fieldGrid {
-  display: grid;
-  gap: 10px;
+.gapBox {
+  background: #1a2b24;
+  border: 1px solid var(--accent-dim);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
 }
 
-.field { }
+.gapLabel {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--accent);
+  margin-bottom: 4px;
+  font-weight: 700;
+}
 
-.field .fLabel {
+.gapText {
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.miniField {
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.miniField .miniLabel {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.planLabel {
   font-size: 0.72rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--text-dim);
-  margin-bottom: 2px;
+  margin: 12px 0 4px;
+  font-weight: 700;
 }
 
-.field .fValue {
-  font-size: 0.92rem;
+.planList {
+  margin: 0 0 10px;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.planList li {
+  font-size: 0.88rem;
   line-height: 1.45;
+}
+
+.metaRow {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  margin-top: 4px;
 }
 
 .sourceLink {
@@ -196,6 +238,4 @@ footer {
 @media (min-width: 600px) {
   .filters { grid-template-columns: repeat(5, 1fr); }
   .filterGroup:first-child { grid-column: span 1; }
-  .fieldGrid { grid-template-columns: 1fr 1fr; }
-  .field.full { grid-column: 1 / -1; }
 }

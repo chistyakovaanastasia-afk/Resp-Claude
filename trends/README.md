@@ -15,18 +15,25 @@ nicht aufgenommen.
 
 ## Spalten pro Trend
 
-| Feld | Bedeutung |
+| Feld (JSON-Key) | Bedeutung |
 |---|---|
-| Trend | Name des Trends |
-| Beschreibung | Was ist es |
-| Wie entstanden & warum | Ursache/Auslöser des Trends |
-| Kunde | Wer ist die Zielgruppe |
-| Beispiel | Belegtes reales Beispiel/Zahl (mit Quelle) |
-| Business-Idee | Konkrete, kleine Geschäftsidee daraus |
-| Umsetzung | Erste konkrete Schritte |
-| Aufwand | niedrig / mittel (nie hoch) |
-| Zeit / Dauer / Ressourcen | Was es zum Start braucht |
-| Bewertung | 1–5 Sterne: Verhältnis Aufwand ↔ Geldverdienst-Potenzial |
+| `trend` | Name des übergeordneten Trends/der Nische (kurz) |
+| `luecke` | **Das konkret fehlende Produkt/Angebot** — ein Satz, keine Kategorie wie "Accessoires" |
+| `warum` | Ein Satz: warum ist die Lücke gerade jetzt real (mit Beleg) |
+| `kunde` | Wer genau kauft das |
+| `plan` | Array von 3–5 konkreten Schritten: **wo/wie man Kund:innen tatsächlich findet**, nicht nur "anbieten" |
+| `aufwand` | niedrig / mittel (nie hoch) |
+| `zeitDauerRessourcen` | Was es zum Start braucht, inkl. realistischer Preis-/Kostenangaben wo möglich |
+| `rating` | 1–5 Sterne: Verhältnis Aufwand ↔ Geldverdienst-Potenzial |
+| `quelle` | Link zum Beleg |
+
+### Qualitätsregeln (aus Nutzer-Feedback, nicht verhandelbar)
+
+- **Kein generisches Geschäftsmodell als "Trend"**: "Print-on-Demand", "digitale Vorlagen verkaufen", "Micro-Side-Hustles" sind KEINE gültigen Einträge — das sind Business-Modelle, keine erkannten Bedürfnisse. Gesucht ist immer: welches *konkrete* Produkt/welche *konkrete* Dienstleistung fehlt für eine *konkrete* Zielgruppe.
+- **`luecke` muss spezifisch sein**: nicht "Accessoires fehlen", sondern z. B. "Grip-Socks mit Studio-Logo, aber Hersteller X verlangt Mindestbestellung ab 200 Stück". Wenn die Recherche keine derart spezifische, belegte Lücke findet, den Kandidaten verwerfen statt vage zu bleiben.
+- **`plan` muss sagen, WO man Kund:innen konkret findet**, nicht nur "anbieten" oder "bewerben". Gute Beispiele: eine durchsuchbare Plattform + Suchbegriff nennen (z. B. "Google Maps 'Reformer Pilates' + Stadtname"), ein konkretes Signal für Bedarf nennen (z. B. Google-Bewertungen nach bestimmten Beschwerde-Stichworten durchsuchen), einen Kanal + Ansprache-Satz nennen.
+- **Reale Nutzer-Erfahrung schlägt Markt-Statistik**: Wenn aus dem Chat/Feedback bekannt ist, dass eine bestimmte Idee für die Nutzerin persönlich nicht funktioniert hat (z. B. Secondhand-Reselling auf Ricardo — aus <10 von 100 Artikeln in 2 Jahren verkauft), diese Idee **nicht wieder aufnehmen**, auch wenn Marktdaten einen "Boom" zeigen. Aggregierte Statistiken schlagen keine dokumentierte persönliche Erfahrung.
+- Lieber 3–4 wirklich konkrete, belegte Einträge pro Runde als 8 vage.
 
 ## Daten & Update-Zyklus
 
@@ -45,21 +52,23 @@ Terminierung selbst sorgt für den 2-Wochen-Abstand, siehe unten). Ablauf
 pro Runde:
 
 1. `trends/data.json` lesen — sowohl `meta` als auch die **vollständige
-   Liste bestehender `entries`** (insbesondere die Felder `trend` und
-   `businessIdee`).
-2. Aktuelle globale und Schweizer Trends recherchieren (Websuche), die zu
-   kleinen, schnell realisierbaren Geld-Ideen passen — Mischung aus global
-   und lokal (CH) beibehalten. Die Situation kann sich seit der letzten
-   Runde verändert haben, es wird also frisch recherchiert, nicht aus dem
-   Gedächtnis wiederholt.
+   Liste bestehender `entries`** (insbesondere `trend` und `luecke`), und
+   diese README komplett (v. a. den Abschnitt "Qualitätsregeln" oben).
+2. Konkrete Lücken recherchieren (Websuche, gezielt nach Beschwerden/
+   Rezensionen/Foren-Posts suchen à la "kann X nirgends finden", "Y fehlt
+   in der Schweiz"), keine allgemeinen Markttrend-Berichte abschreiben.
+   Mischung aus global und lokal (CH) beibehalten. Die Situation kann sich
+   seit der letzten Runde verändert haben, es wird also frisch
+   recherchiert, nicht aus dem Gedächtnis wiederholt.
 3. **Keine Wiederholungen**: Vor dem Hinzufügen jeden neuen Kandidaten
    gegen alle vorhandenen `entries` abgleichen (Thema/Kernidee, nicht nur
    exakter Titel-Wortlaut). Ist ein Trend im Kern schon vorhanden:
-   - Wenn es nur ein spürbares Update ist (neue Zahl, neues Beispiel),
-     das bestehende Feld `beispiel`/`rating` in-place aktualisieren statt
+   - Wenn es nur ein spürbares Update ist (neue Zahl, neuer Beleg), das
+     bestehende Feld `luecke`/`plan`/`rating` in-place aktualisieren statt
      einen neuen Eintrag anzulegen.
-   - Sonst überspringen und einen wirklich neuen Trend suchen.
-4. 5–8 wirklich neue Einträge nach dem Schema ergänzen, mit fortlaufender
+   - Sonst überspringen und eine wirklich neue Lücke suchen.
+4. 3–6 wirklich neue, konkrete Einträge nach dem Schema ergänzen (siehe
+   Qualitätsregeln oben — Qualität vor Quantität), mit fortlaufender
    `cycle`-Nummer, eindeutiger `id` (z. B. `c<cycle>-<lfd. Nr.>`) und
    realer Quelle je Eintrag. Nur `aufwand: "niedrig"` oder `"mittel"`
    aufnehmen.
