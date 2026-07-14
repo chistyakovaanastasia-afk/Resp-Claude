@@ -1,18 +1,15 @@
 # Was ist in diesem Repository?
 
-Dieses Repository ist historisch gewachsen und enthält mehrere
-unabhängige kleine Projekte:
+**Jedes Tool hat jetzt sein eigenes Repository** (Stand 14.07.2026).
+Dieses Repository enthält nur noch den 汉语 Auto-Trainer — die alten
+Adressen der anderen Tools leiten automatisch auf die neuen weiter.
 
-| Projekt | 🔗 Tool öffnen | Code |
+| Tool | 🔗 Tool öffnen | Repository |
 |---|---|---|
-| **汉语 Auto-Trainer** | **<https://chistyakovaanastasia-afk.github.io/Resp-Claude/>** | Hauptverzeichnis (`index.html`, `app.js`) |
-| **🛒 Japan Preis-Finder** | **<https://chistyakovaanastasia-afk.github.io/japan-preis-finder/>** | eigenes Repo: [japan-preis-finder](https://github.com/chistyakovaanastasia-afk/japan-preis-finder) |
-| **📈 Trend-Radar** | **<https://chistyakovaanastasia-afk.github.io/Resp-Claude/trends/>** | `/trends/` |
-| **🤖 Trading-Bot** | läuft im Hintergrund (kein Web-Tool) — Berichte kommen per Claude-Chat | Branch [`claude/trading-bot`](https://github.com/chistyakovaanastasia-afk/Resp-Claude/tree/claude/trading-bot/trading-bot) |
-
-Die GitHub-Pages-Webseite dieses Repositories veröffentlicht den
-Auto-Trainer und die Unterordner. Der Rest dieses READMEs beschreibt
-den Auto-Trainer.
+| **汉语 Auto-Trainer** | **<https://chistyakovaanastasia-afk.github.io/chinese-trainer/>** | [chinese-trainer](https://github.com/chistyakovaanastasia-afk/chinese-trainer) (Kopie läuft übergangsweise auch noch hier) |
+| **🛒 Japan Preis-Finder** | **<https://chistyakovaanastasia-afk.github.io/japan-preis-finder/>** | [japan-preis-finder](https://github.com/chistyakovaanastasia-afk/japan-preis-finder) |
+| **📈 Trend-Radar** | **<https://chistyakovaanastasia-afk.github.io/trend-radar/>** | [trend-radar](https://github.com/chistyakovaanastasia-afk/trend-radar) |
+| **🤖 Trading-Bot** | läuft im Hintergrund (kein Web-Tool) — Berichte kommen per Claude-Chat | [trading-bot](https://github.com/chistyakovaanastasia-afk/trading-bot) |
 
 ---
 
