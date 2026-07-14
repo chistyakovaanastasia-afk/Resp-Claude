@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="theme-color" content="#0b0f14">
+<title>Trend-Radar</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>📈 Trend-Radar</h1>
+    <p class="subtitle">Globale &amp; Schweizer Trends, alle 2 Wochen neu recherchiert — gefiltert auf Ideen mit wenig Aufwand &amp; geringen Kosten</p>
+    <div id="metaBar" class="metaBar"></div>
+  </header>
+
+  <main>
+    <div class="filters">
+      <div class="filterGroup">
+        <label for="searchInput">Suche</label>
+        <input id="searchInput" type="search" placeholder="z. B. Secondhand, KI, Senior…">
+      </div>
+      <div class="filterGroup">
+        <label for="scopeFilter">Region</label>
+        <select id="scopeFilter">
+          <option value="alle">Alle</option>
+        </select>
+      </div>
+      <div class="filterGroup">
+        <label for="aufwandFilter">Aufwand</label>
+        <select id="aufwandFilter">
+          <option value="alle">Alle</option>
+          <option value="niedrig">Niedrig</option>
+          <option value="mittel">Mittel</option>
+        </select>
+      </div>
+      <div class="filterGroup">
+        <label for="ratingFilter">Min. Bewertung</label>
+        <select id="ratingFilter">
+          <option value="0">Alle</option>
+          <option value="3">★★★+</option>
+          <option value="4">★★★★+</option>
+          <option value="5">★★★★★</option>
+        </select>
+      </div>
+      <div class="filterGroup">
+        <label for="sortSelect">Sortierung</label>
+        <select id="sortSelect">
+          <option value="date">Neueste zuerst</option>
+          <option value="rating">Bewertung (beste zuerst)</option>
+          <option value="az">Alphabetisch</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="resultCount" class="resultCount"></div>
+    <div id="cardList" class="cardList"></div>
+    <div id="emptyState" class="emptyState hidden">Keine Trends gefunden — Filter anpassen.</div>
+  </main>
+
+  <footer>
+    <p>Automatisch alle 2 Wochen nachts aktualisiert, um Kapazität zu schonen. Datenstand siehe oben.</p>
+  </footer>
+
+</div>
+<script src="app.js"></script>
+</body>
+</html>
