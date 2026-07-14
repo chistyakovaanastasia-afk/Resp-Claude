@@ -19,16 +19,6 @@ const els = {
   emptyState: document.getElementById("emptyState"),
 };
 
-const FIELD_DEFS = [
-  { key: "beschreibung", label: "Beschreibung", full: true },
-  { key: "wieEntstanden", label: "Wie entstanden & warum", full: true },
-  { key: "kunde", label: "Kunde", full: false },
-  { key: "zeitDauerRessourcen", label: "Zeit / Dauer / Ressourcen", full: false },
-  { key: "beispiel", label: "Beispiel", full: true },
-  { key: "businessIdee", label: "Business-Idee", full: true },
-  { key: "umsetzung", label: "Umsetzung", full: true },
-];
-
 function stars(n) {
   const full = "★".repeat(n);
   const empty = "☆".repeat(5 - n);
@@ -74,7 +64,7 @@ function applyFiltersAndSort() {
   if (state.search.trim()) {
     const q = state.search.trim().toLowerCase();
     entries = entries.filter((e) =>
-      [e.trend, e.beschreibung, e.kunde, e.businessIdee]
+      [e.trend, e.luecke, e.kunde, ...(e.plan || [])]
         .join(" ")
         .toLowerCase()
         .includes(q)
@@ -104,13 +94,9 @@ function applyFiltersAndSort() {
 }
 
 function cardHtml(e) {
-  const fields = FIELD_DEFS.map(
-    (f) => `
-      <div class="field ${f.full ? "full" : ""}">
-        <div class="fLabel">${escapeHtml(f.label)}</div>
-        <div class="fValue">${escapeHtml(e[f.key])}</div>
-      </div>`
-  ).join("");
+  const planItems = (e.plan || [])
+    .map((step) => `<li>${escapeHtml(step)}</li>`)
+    .join("");
 
   const source = e.quelle
     ? `<a class="sourceLink" href="${escapeHtml(e.quelle)}" target="_blank" rel="noopener">Quelle ↗</a>`
@@ -127,7 +113,25 @@ function cardHtml(e) {
         <span class="badge aufwand-${escapeHtml(e.aufwand)}">Aufwand: ${escapeHtml(e.aufwand)}</span>
         <span class="badge">Runde #${e.cycle} · ${escapeHtml(e.dateAdded)}</span>
       </div>
-      <div class="fieldGrid">${fields}</div>
+
+      <div class="gapBox">
+        <div class="gapLabel">🎯 Konkrete Lücke</div>
+        <div class="gapText">${escapeHtml(e.luecke)}</div>
+      </div>
+
+      <div class="miniField">
+        <span class="miniLabel">Warum jetzt:</span> ${escapeHtml(e.warum)}
+      </div>
+      <div class="miniField">
+        <span class="miniLabel">Kunde:</span> ${escapeHtml(e.kunde)}
+      </div>
+
+      <div class="planLabel">📋 Plan</div>
+      <ol class="planList">${planItems}</ol>
+
+      <div class="metaRow">
+        <span>⏱ ${escapeHtml(e.zeitDauerRessourcen)}</span>
+      </div>
       ${source}
     </article>`;
 }
