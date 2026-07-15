@@ -158,7 +158,9 @@ async function rakutenSearch(appId, accessKey, keyword) {
 
 function shopSearchUrls(term, origTerm) {
   const q = encodeURIComponent(term);
-  const qOrig = encodeURIComponent(origTerm || term);
+  const base = origTerm || term;
+  // Google-Seitensuche: "site:domain <begriff>" komplett url-kodiert.
+  const gsite = (domain) => encodeURIComponent("site:" + domain + " " + base);
   return {
     // Rakuten-Suche, s=11 = Preis aufsteigend (günstigstes zuerst)
     rakuten: `https://search.rakuten.co.jp/search/mall/${q}/?s=11`,
@@ -166,10 +168,11 @@ function shopSearchUrls(term, origTerm) {
     amazon: `https://www.amazon.co.jp/s?k=${q}&s=price-asc-rank`,
     // Kakaku.com: search.kakaku.com ist die eigentliche Such-Domain
     kakaku: `https://search.kakaku.com/${q}/`,
-    // Wiederverkäufer (russischsprachig). Suchbegriff: Original/Latein,
-    // nicht japanisch. URL-Format ist eine Annahme und ggf. anzupassen.
-    melonpanda: `https://melonpanda.com/search?q=${qOrig}`,
-    nunibar: `https://nunibar.com/search?q=${qOrig}`,
+    // Wiederverkäufer (russischsprachig) mit unterschiedlichen/unbekannten
+    // Such-Systemen -> zuverlässige Google-Seitensuche (site:) mit dem
+    // Original-/Lateinbegriff. Findet die Produktseite unabhängig vom Shop-CMS.
+    melonpanda: `https://www.google.com/search?q=${gsite("melonpanda.com")}`,
+    nunibar: `https://www.google.com/search?q=${gsite("nunibar.com")}`,
   };
 }
 
