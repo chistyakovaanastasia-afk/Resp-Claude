@@ -1,0 +1,19 @@
+[
+  {
+    "name": "Placenta Collagen Beauty Drink 10x50ml",
+    "quelle": "https://beispiel-rakuten-shop.jp/item/12345",
+    "zutaten": ["豚プラセンタエキス", "フィッシュコラーゲン", "ビタミンC", "ヒアルロン酸", "ナイアシン"],
+    "anpreisungen": "美白効果、アンチエイジング",
+    "tagesdosis": "1 Flasche"
+  },
+  {
+    "name": "Simple Vitamin C Tablets",
+    "zutaten": ["アスコルビン酸", "ビタミンE"],
+    "tagesdosis": "2 Tabletten"
+  },
+  {
+    "name": "Night Recovery Complex",
+    "zutaten": ["メラトニン", "GABA", "ビタミンB6"],
+    "tagesdosis": "1 Kapsel"
+  }
+]
