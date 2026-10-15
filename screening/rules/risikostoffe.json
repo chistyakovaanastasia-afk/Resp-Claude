@@ -1,0 +1,93 @@
+{
+  "stand": "2026-09",
+  "lesehilfe": {
+    "rot": "Raus aus der Box. Belegt unzulaessig in CH-Nahrungsergaenzungsmitteln oder klar als Heilmittel eingestuft.",
+    "gelb": "Einzelpruefung noetig, bevor das Produkt in eine Box darf. Der Eintrag nennt genau, was zu pruefen ist.",
+    "hinweis": "Im Privatimport-Modell (Kunde ist Importeur) gilt das CH-Lebensmittelrecht formal nicht fuer die Ware. Zoll und Swissmedic koennen trotzdem zurueckhalten, vernichten und ein Verfahren eroeffnen - auf Kosten des BESTELLERS, also deiner Kundin. Dieses Screening schuetzt deine Kundin und damit deine Marge, es ist kein Compliance-Stempel."
+  },
+  "stoffe": [
+    {
+      "id": "dhea",
+      "muster": ["DHEA", "dehydroepiandrosteron", "デヒドロエピアンドロステロン"],
+      "ampel": "rot",
+      "grund": "Darf in der Schweiz nicht in Nahrungsergaenzungsmitteln enthalten sein; im Ausland teils rezeptfrei erhaeltlich.",
+      "quelle": "https://nvs.swiss/aktuelles/vorsicht-bei-nahrungsergaenzungsmitteln"
+    },
+    {
+      "id": "dmaa",
+      "muster": ["DMAA", "1,3-dimethylamylamin", "methylhexanamin"],
+      "ampel": "rot",
+      "grund": "Darf in der Schweiz nicht in Nahrungsergaenzungsmitteln enthalten sein.",
+      "quelle": "https://nvs.swiss/aktuelles/vorsicht-bei-nahrungsergaenzungsmitteln"
+    },
+    {
+      "id": "dnp",
+      "muster": ["DNP", "2,4-dinitrophenol", "dinitrophenol"],
+      "ampel": "rot",
+      "grund": "Darf in der Schweiz nicht in Nahrungsergaenzungsmitteln enthalten sein; akut gesundheitsgefaehrdend.",
+      "quelle": "https://nvs.swiss/aktuelles/vorsicht-bei-nahrungsergaenzungsmitteln"
+    },
+    {
+      "id": "plazenta",
+      "muster": ["プラセンタ", "placenta", "plazenta", "馬プラセンタ", "豚プラセンタ"],
+      "ampel": "gelb",
+      "grund": "Sehr haeufig in japanischen Beauty-Supplements. Zwei Huerden gleichzeitig: (1) Novel-Food-Status - vor 1997 in CH/EU nicht in nennenswertem Umfang verzehrt, also bewilligungspflichtig; (2) tierisches Erzeugnis - veterinaerrechtliche Einfuhrbedingungen.",
+      "pruefen": "Novel-Food-Bewilligungsstatus beim BLV abfragen UND veterinaerrechtliche Einfuhrbeschraenkung fuer das Ursprungstier klaeren. Ohne beides: nicht in die Box.",
+      "quelle": "https://www.blv.admin.ch/blv/de/home/lebensmittel-und-ernaehrung/rechts-und-vollzugsgrundlagen/bewilligung-und-meldung/bewilligung.html"
+    },
+    {
+      "id": "nmn",
+      "muster": ["NMN", "ニコチンアミドモノヌクレオチド", "nicotinamide mononucleotide"],
+      "ampel": "gelb",
+      "grund": "Longevity-Zutat, in Japan frei verkaeuflich. Novel-Food-Status in der Schweiz muss belegt werden.",
+      "pruefen": "Aktuellen BLV-Bewilligungsstatus abfragen. Ohne Bewilligung nicht in die Box.",
+      "quelle": "https://www.blv.admin.ch/blv/de/home/lebensmittel-und-ernaehrung/rechts-und-vollzugsgrundlagen/bewilligung-und-meldung/bewilligung.html"
+    },
+    {
+      "id": "melatonin",
+      "muster": ["メラトニン", "melatonin"],
+      "ampel": "gelb",
+      "grund": "Wird in der Schweiz regelmaessig dem Heilmittelrecht zugeordnet, nicht dem Lebensmittelrecht.",
+      "pruefen": "Gegen die Swissmedic-Abgrenzungskriterien Heilmittel/Lebensmittel pruefen. Im Zweifel raus - Swissmedic-Faelle sind Strafverfahren, keine Ordnungswidrigkeit.",
+      "quelle": "https://www.swissmedic.ch/dam/swissmedic/de/dokumente/marktueberwachung/abrenzungsfragen/mu100_00_002d_mb_abgrenzungskriterien_heilmittel_lebensmittel_publikation.pdf.download.pdf/MU100_00_002d_MB_Abgrenzungskriterien_Heilmittel_Lebensmittel_Publikation.pdf"
+    },
+    {
+      "id": "kampo_kraeuter",
+      "muster": ["漢方", "麻黄", "ephedra", "マオウ", "生薬", "5-HTP", "ヒドロキシトリプトファン"],
+      "ampel": "gelb",
+      "grund": "Kampo- und Heilpflanzenextrakte kippen schnell in die Heilmittel-Einstufung (Swissmedic).",
+      "pruefen": "Jeden Extrakt einzeln gegen die Swissmedic-Abgrenzungskriterien pruefen. Ephedra/Mahuang: nicht aufnehmen.",
+      "quelle": "https://www.swissmedic.ch/dam/swissmedic/de/dokumente/marktueberwachung/abrenzungsfragen/mu100_00_002d_mb_abgrenzungskriterien_heilmittel_lebensmittel_publikation.pdf.download.pdf/MU100_00_002d_MB_Abgrenzungskriterien_Heilmittel_Lebensmittel_Publikation.pdf"
+    },
+    {
+      "id": "tierisches_kollagen",
+      "muster": ["コラーゲン", "collagen", "kollagen", "フィッシュコラーゲン", "馬"],
+      "ampel": "gelb",
+      "grund": "Kernzutat fast jeder japanischen Beauty-Box. Unkritisch beim Stoff selbst, kritisch bei der veterinaerrechtlichen Einfuhr tierischer Erzeugnisse aus einem Drittland.",
+      "pruefen": "Tierart und Ursprungsland klaeren; mit dem Konsolidierer abstimmen, ob die Sendung als tierisches Erzeugnis deklariert werden muss.",
+      "quelle": "https://www.blv.admin.ch/de/import-lebensmittel-drittstaaten"
+    },
+    {
+      "id": "hyaluron_oral",
+      "muster": ["ヒアルロン酸", "hyaluron", "hyaluronic acid"],
+      "ampel": "gelb",
+      "grund": "Oral eingenommene Hyaluronsaeure: Novel-Food-Status pruefen.",
+      "pruefen": "BLV-Status abfragen.",
+      "quelle": "https://www.blv.admin.ch/blv/de/home/lebensmittel-und-ernaehrung/rechts-und-vollzugsgrundlagen/bewilligung-und-meldung/bewilligung.html"
+    },
+    {
+      "id": "fermente_enzyme",
+      "muster": ["酵素", "麹", "koji", "enzym", "発酵"],
+      "ampel": "gelb",
+      "grund": "Fermente/Enzympraeparate: Novel-Food-Frage, je nach Stamm und Herstellungsverfahren.",
+      "pruefen": "Stamm und Verfahren beim Hersteller erfragen, dann BLV-Status klaeren.",
+      "quelle": "https://www.blv.admin.ch/blv/de/home/lebensmittel-und-ernaehrung/rechts-und-vollzugsgrundlagen/bewilligung-und-meldung/bewilligung.html"
+    }
+  ],
+  "anpreisungen": {
+    "hinweis": "Nicht nur die Zutat kippt ein Produkt in die Heilmittel-Einstufung, sondern auch die Anpreisung auf Packung und Produktseite. Gesundheitsbezogene Angaben, die nicht in Anhang 14 LIV stehen, brauchen eine BLV-Bewilligung.",
+    "muster_jp": ["治る", "効果", "免疫力", "美白", "痩身", "アンチエイジング", "予防"],
+    "muster_de": ["heilt", "lindert", "beugt vor", "staerkt das Immunsystem", "gegen Falten", "Anti-Aging", "wirkt gegen"],
+    "regel": "Solche Formulierungen NIE in deine deutschen/englischen Produkttexte uebernehmen, auch wenn sie auf der japanischen Packung stehen."
+  }
+}

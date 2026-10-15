@@ -1,0 +1,37 @@
+{
+  "quelle": "VNem (SR 817.022.14), Anhang 1 Teil A - abschliessende Liste",
+  "quellen_url": "https://www.blv.admin.ch/de/nahrungsergaenzungsmittel",
+  "stand": "2026-09",
+  "regel": "Die Liste der in Nahrungsergaenzungsmitteln zulaessigen Vitamine und Mineralstoffe ist ABSCHLIESSEND. Was hier nicht steht, darf in der Schweiz nicht als Vitamin/Mineralstoff in einem NEM enthalten sein. Zusaetzlich gelten Hoechstmengen pro empfohlener Tagesdosis (Anhang 1) und zulaessige Verbindungen/chemische Formen (Anhang 2).",
+  "vitamine": [
+    { "name": "Biotin", "jp": ["ビオチン"] },
+    { "name": "Folate", "jp": ["葉酸", "フォラシン"] },
+    { "name": "Niacin", "jp": ["ナイアシン", "ニコチン酸アミド"] },
+    { "name": "Pantothensaeure", "jp": ["パントテン酸"] },
+    { "name": "Riboflavin", "jp": ["リボフラビン", "ビタミンB2"] },
+    { "name": "Thiamin", "jp": ["チアミン", "ビタミンB1"] },
+    { "name": "Vitamin A", "jp": ["ビタミンA", "レチノール"] },
+    { "name": "Vitamin B6", "jp": ["ビタミンB6", "ピリドキシン"] },
+    { "name": "Vitamin B12", "jp": ["ビタミンB12", "シアノコバラミン"] },
+    { "name": "Vitamin C", "jp": ["ビタミンC", "アスコルビン酸"] },
+    { "name": "Vitamin D", "jp": ["ビタミンD", "コレカルシフェロール"] },
+    { "name": "Vitamin E", "jp": ["ビタミンE", "トコフェロール"] },
+    { "name": "Vitamin K", "jp": ["ビタミンK", "メナキノン"] }
+  ],
+  "mineralstoffe": [
+    { "name": "Bor", "jp": ["ホウ素"] },
+    { "name": "Calcium", "jp": ["カルシウム"] },
+    { "name": "Chrom", "jp": ["クロム"] },
+    { "name": "Eisen", "jp": ["鉄", "ヘム鉄"] },
+    { "name": "Jod", "jp": ["ヨウ素", "ヨード"] },
+    { "name": "Kalium", "jp": ["カリウム"] },
+    { "name": "Kupfer", "jp": ["銅"] },
+    { "name": "Magnesium", "jp": ["マグネシウム"] },
+    { "name": "Mangan", "jp": ["マンガン"] },
+    { "name": "Molybdaen", "jp": ["モリブデン"] },
+    { "name": "Selen", "jp": ["セレン"] },
+    { "name": "Silicium", "jp": ["ケイ素", "シリカ"] },
+    { "name": "Zink", "jp": ["亜鉛"] }
+  ],
+  "hinweis_hoechstmengen": "Hoechstmengen pro Tagesdosis NICHT hier hartcodiert - sie werden revidiert (zuletzt Hoechstmengenmodell per 01.07.2020). Vor jeder Freigabe den aktuellen Anhang 1 VNem abrufen und die Tagesdosis des Produkts dagegen rechnen."
+}
